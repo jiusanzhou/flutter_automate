@@ -257,6 +257,7 @@ class _PipelineStartPageState extends State<PipelineStartPage> {
   TextEditingController _msgController = TextEditingController();
 
   Widget _showDiagleEditor({int index}) {
+    _msgController.text = "";
     if (index != null) _msgController.text = msgs[index];
     showDialog(
       context: context,
@@ -292,7 +293,6 @@ class _PipelineStartPageState extends State<PipelineStartPage> {
                   showToast("修改成功");
                 }
               });
-              _msgController.text = "";
               Navigator.pop(context);
             }, child: Text("确认", style: TextStyle(color: Theme.of(context).primaryColor))),
           ],

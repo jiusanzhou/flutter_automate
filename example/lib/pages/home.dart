@@ -55,10 +55,14 @@ class _HomePageState extends State<HomePage> {
       // 如果任务在执行就考虑终止任务，目前直接终止所有的应用
 
       FlutterAutomate.instance.stopAll().then((value) {
-        print("停止全部任务成功");
+        print("停止全部任务成功: $value");
         showToast("停止全部任务成功: $value");
+
+        _running = false;
+        _floatView.updateFloat(text: "启动");
       });
-      
+
+
       return;
     }
 
