@@ -1,0 +1,86 @@
+group 'im.zoe.flutter_automate'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    ext.kotlin_version = '1.3.50'
+    repositories {
+        google()
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.5.0'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        jcenter()
+        flatDir {
+            dirs project(':flutter_automate').file('libs')
+        }
+        maven {
+            url "https://jitpack.io"
+        }
+    }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+android {
+    compileSdkVersion 28
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+    defaultConfig {
+        minSdkVersion 17
+        multiDexEnabled true
+    }
+    lintOptions {
+        disable 'InvalidPackage'
+    }
+}
+
+dependencies {
+    api "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    api 'com.android.support:appcompat-v7:28'
+    api(name: 'autojs-release', ext: 'aar')
+    api(name: 'automator-release', ext: 'aar')
+    api(name: 'common-release', ext: 'aar')
+
+
+    api fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'com.google.android.material:material:1.1.0'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    // implementation 'com.android.support:multidex:1.0.3'
+
+    api 'org.greenrobot:eventbus:3.0.0'
+    api 'net.lingala.zip4j:zip4j:1.3.2'
+    api 'com.github.hyb1996:EnhancedFloaty:0.31'
+    api 'com.github.hyb1996:settingscompat:1.1.5'
+    api 'com.makeramen:roundedimageview:2.3.0'
+    // OpenCv
+    api(name: 'opencv-3.4.3', ext: 'aar')
+    // OkHttp
+    api 'com.squareup.okhttp3:okhttp:3.11.0'
+    // JDeferred
+    api 'org.jdeferred:jdeferred-android-aar:1.2.6'
+    //RootShell
+    api 'com.github.Stericson:RootShell:1.6'
+    // Gson
+    api 'com.google.code.gson:gson:2.8.5'
+    // log4j
+    api group: 'de.mindpipe.android', name: 'android-logging-log4j', version: '1.0.3'
+    api group: 'log4j', name: 'log4j', version: '1.2.17'
+    // Terminal emulator
+    api(name: 'libtermexec-release', ext: 'aar')
+    api(name: 'emulatorview-release', ext: 'aar')
+    api(name: 'term-debug', ext: 'aar')
+}

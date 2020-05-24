@@ -1,0 +1,84 @@
+name: 自动工具箱(开发)
+pipelines:
+  - id: douyin/comment/send-msg
+    name: 抖音评论回复私信
+    description: 抖音评论私信回复
+    app: 抖音短视频
+    icon: https://s3.pstatp.com/aweme/resource/web/static/image/index/logo_b7a2aca.png
+    params: null # TODO:
+    code: "toast('哈哈哈')"
+    path: scripts/demo.js
+    main: main # 默认
+  - id: douyin/comment/send-msg
+    name: 抖音私信回复
+    description: 抖音评论私信回复
+    app: 抖音短视频
+    icon: https://s3.pstatp.com/aweme/resource/web/static/image/index/logo_b7a2aca.png
+    params: null # TODO:
+    code: "toast('哈哈哈')"
+    path: scripts/demo.js
+  - id: douyin/comment/send-msg
+    name: 抖音评论私信回复
+    description: 抖音评论私信回复
+    app: 抖音短视频
+    icon: https://s3.pstatp.com/aweme/resource/web/static/image/index/logo_b7a2aca.png
+    params: null # TODO:
+    code: "toast('哈哈哈')"
+    path: scripts/demo.js
+  - id: douyin/comment/send-msg
+    name: 抖音评论私信回复
+    app: 抖音短视频
+    description: 抖音评论私信回复
+    icon: https://s3.pstatp.com/aweme/resource/web/static/image/index/logo_b7a2aca.png
+    params: null # TODO:
+    code: "toast('哈哈哈')"
+    path: scripts/demo.js
+  - id: douyin/comment/send-msg
+    name: 抖音评论私信回复
+    app: 抖音短视频
+    description: 抖音评论私信回复
+    icon: https://s3.pstatp.com/aweme/resource/web/static/image/index/logo_b7a2aca.png
+    params: null # TODO:
+    code: "toast('哈哈哈')"
+    path: scripts/demo.js
+  - id: douyin/comment/send-msg
+    name: 抖音评论私信回复
+    app: 抖音短视频
+    description: 抖音评论私信回复
+    icon: https://s3.pstatp.com/aweme/resource/web/static/image/index/logo_b7a2aca.png
+    params: null # TODO:
+    code: "toast('哈哈哈')"
+    path: scripts/demo.js
+  - id: douyin/comment/send-msg
+    name: 抖音评论私信回复
+    app: 抖音短视频
+    description: 抖音评论私信回复
+    icon: https://s3.pstatp.com/aweme/resource/web/static/image/index/logo_b7a2aca.png
+    params: null # TODO
+    code: "toast('哈哈哈')"
+    path: scripts/demo.js
+  - id: douyin/comment/send-msg
+    name: 抖音评论私信回复
+    app: 抖音短视频
+    description: 抖音评论私信回复
+    icon: https://s3.pstatp.com/aweme/resource/web/static/image/index/logo_b7a2aca.png
+    params: null # TODO:
+    code: "toast('哈哈哈')"
+    path: scripts/demo.js
+  - id: douyin/comment/send-msg
+    name: 抖音评论私信回复
+    app: 抖音短视频
+    description: 抖音评论私信回复
+    icon: https://s3.pstatp.com/aweme/resource/web/static/image/index/logo_b7a2aca.png
+    params: null # TODO:
+    code: "toast('哈哈哈')"
+    path: scripts/demo.js
+  - id: douyin/comment/send-msg
+    name: 抖音评论私信回复
+    app: 抖音短视频
+    acitivity: null
+    description: 抖音评论私信回复
+    icon: https://s3.pstatp.com/aweme/resource/web/static/image/index/logo_b7a2aca.png
+    params: null # TODO:
+    code: "toast('哈哈哈')"
+    path: scripts/demo.js
