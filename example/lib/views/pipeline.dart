@@ -50,7 +50,7 @@ class _PipelineOverviewState extends State<PipelineOverview> {
   }
 
 
-  Widget _logo({String url, double size: 50}) {
+  Widget _logo({String url, double size: 65}) {
     return CircleAvatar(
       backgroundColor: Colors.black,
       child: url != null

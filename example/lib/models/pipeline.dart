@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_automate_example/components/schema.dart';
+import 'package:oktoast/oktoast.dart';
 import 'package:yaml/yaml.dart';
 
 class Pipeline {
@@ -92,6 +93,8 @@ class PipelineRemoteProvider {
       data = await Dio().get<String>(indexFile).then((res) {
         if (res.statusCode != 200) Future.error(res.statusMessage);
         return json.decode(json.encode(loadYaml(res.data)));
+      }).catchError((e) {
+        showToast("初始化失败");
       });
     }
 

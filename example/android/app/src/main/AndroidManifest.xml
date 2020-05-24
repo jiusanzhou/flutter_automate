@@ -9,7 +9,7 @@
     <application
         tools:replace="android:label"
         android:name="io.flutter.app.FlutterApplication"
-        android:label="flutter_automate_example"
+        android:label="自动工具箱"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
