@@ -2,7 +2,21 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../../../side.zoe.im/automate/android/android.iml" filepath="$PROJECT_DIR$/../../../side.zoe.im/automate/android/android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../../side.zoe.im/automate/android/app/app.iml" filepath="$PROJECT_DIR$/../../../side.zoe.im/automate/android/app/app.iml" />
+      <module fileurl="file://$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/device_info-0.4.2+4/android/device_info.iml" filepath="$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/device_info-0.4.2+4/android/device_info.iml" />
       <module fileurl="file://$PROJECT_DIR$/flutter_automate.iml" filepath="$PROJECT_DIR$/flutter_automate.iml" />
+      <module fileurl="file://$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/flutter_keyboard_visibility-0.7.0/android/flutter_keyboard_visibility.iml" filepath="$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/flutter_keyboard_visibility-0.7.0/android/flutter_keyboard_visibility.iml" />
+      <module fileurl="file://$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/flutter_plugin_android_lifecycle-1.0.8/android/flutter_plugin_android_lifecycle.iml" filepath="$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/flutter_plugin_android_lifecycle-1.0.8/android/flutter_plugin_android_lifecycle.iml" />
+      <module fileurl="file://$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/image_picker-0.6.6+4/android/image_picker.iml" filepath="$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/image_picker-0.6.6+4/android/image_picker.iml" />
+      <module fileurl="file://$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/imei_plugin-1.1.6/android/imei_plugin.iml" filepath="$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/imei_plugin-1.1.6/android/imei_plugin.iml" />
+      <module fileurl="file://$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/package_info-0.4.0+18/android/package_info.iml" filepath="$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/package_info-0.4.0+18/android/package_info.iml" />
+      <module fileurl="file://$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/path_provider-1.6.9/android/path_provider.iml" filepath="$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/path_provider-1.6.9/android/path_provider.iml" />
+      <module fileurl="file://$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/path_provider_macos-0.0.4+3/android/path_provider_macos.iml" filepath="$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/path_provider_macos-0.0.4+3/android/path_provider_macos.iml" />
+      <module fileurl="file://$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/phone_number-0.6.2+3/android/phone_number.iml" filepath="$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/phone_number-0.6.2+3/android/phone_number.iml" />
+      <module fileurl="file://$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/shared_preferences-0.5.7+3/android/shared_preferences.iml" filepath="$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/shared_preferences-0.5.7+3/android/shared_preferences.iml" />
+      <module fileurl="file://$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/shared_preferences_macos-0.0.1+9/android/shared_preferences_macos.iml" filepath="$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/shared_preferences_macos-0.0.1+9/android/shared_preferences_macos.iml" />
+      <module fileurl="file://$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/shared_preferences_web-0.1.2+7/android/shared_preferences_web.iml" filepath="$USER_HOME$/projects/flutter/.pub-cache/hosted/pub.flutter-io.cn/shared_preferences_web-0.1.2+7/android/shared_preferences_web.iml" />
     </modules>
   </component>
 </project>

@@ -107,6 +107,7 @@ class AutoMate private constructor(application: Application) : com.stardust.auto
 
     // public method
 
+    // 执行代码
     fun execute(name: String? = "main", code: String?, workDir: String?): ScriptExecution {
 
         val source: ScriptSource = StringScriptSource(name, code)
@@ -126,7 +127,20 @@ class AutoMate private constructor(application: Application) : com.stardust.auto
         }
     }
 
+    // 停止全部任务
     fun stopAll(): Int {
         return scriptEngineService.stopAll()
+    }
+
+    // 检查服务权限
+    fun checkServicePermission(): Boolean {
+        return AccessibilityServiceUtils.isAccessibilityServiceEnabled(application, AccessibilityService::class.java)
+    }
+
+    // 请求权限
+    fun requestServicePermission(timeout: Long): Boolean {
+        AccessibilityServiceTool.goToAccessibilitySetting()
+        com.stardust.view.accessibility.AccessibilityService.waitForEnabled(timeout)
+        return true
     }
 }

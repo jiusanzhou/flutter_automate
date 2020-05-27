@@ -5,6 +5,9 @@ import android.app.Application
 import android.util.Log
 import androidx.annotation.NonNull;
 import com.stardust.app.GlobalAppContext
+import com.stardust.view.accessibility.AccessibilityService
+import com.stardust.view.accessibility.AccessibilityServiceUtils
+import im.zoe.flutter_automate.automate.AccessibilityServiceTool
 import im.zoe.flutter_automate.automate.AutoMate
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -31,7 +34,7 @@ public class FlutterAutomatePlugin:
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     Log.i(LOG_TAG, "===========> onAttachedToEngine")
 
-    channel = MethodChannel(flutterPluginBinding.flutterEngine.dartExecutor, METHOD_CHANNEL_NAME)
+    channel = MethodChannel(flutterPluginBinding.binaryMessenger, METHOD_CHANNEL_NAME)
     channel.setMethodCallHandler(this)
 
     application = flutterPluginBinding.applicationContext as Application
@@ -67,8 +70,11 @@ public class FlutterAutomatePlugin:
       "stopAll" -> {
         stopAll(call, result)
       }
-      "waitForAccessibilityServiceEnabled" -> {
-        // waitForAccessibilityServiceEnabled(call, result)
+      "checkServicePermission" -> {
+        checkServicePermission(call, result)
+      }
+      "requestServicePermission" -> {
+        requestServicePermission(call, result)
       }
       else -> {
         result.notImplemented()
@@ -182,6 +188,22 @@ public class FlutterAutomatePlugin:
   private fun stopAll(call: MethodCall, result: Result) {
     var count = automate.stopAll()
     result.success(count)
+  }
+
+  // 检查服务权限
+  private fun checkServicePermission(call: MethodCall, result: Result) {
+    result.success(AccessibilityServiceUtils.isAccessibilityServiceEnabled(application, AccessibilityService::class.java))
+  }
+
+  // 请求权限
+  private fun requestServicePermission(call: MethodCall, result: Result) {
+    var timeout: Int? = call.argument("timeout")
+    if (timeout == null) timeout = -1
+    AccessibilityServiceTool.goToAccessibilitySetting()
+    if (call.argument<Boolean>("wait") != true) {
+      return result.success(true)
+    }
+    result.success(com.stardust.view.accessibility.AccessibilityService.waitForEnabled(timeout as Long))
   }
 
   private fun waitForAccessibilityServiceEnabled(call: MethodCall, result: Result) {

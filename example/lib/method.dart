@@ -1,7 +1,5 @@
-
-
-
 import 'package:flutter/services.dart';
+import 'package:flutter_automate_example/utils/platform.dart';
 
 class DefaultFactory {
 
@@ -23,6 +21,10 @@ class DefaultFactory {
     instance = this;
   }
 
+  void setOnFloatClick(Function fn) {
+    onFloatClick = fn;
+  }
+
   Future<dynamic> handleMethod(MethodCall call) async {
     switch(call.method) {
       case "onFloatClick":
@@ -39,5 +41,5 @@ class DefaultFactory {
       "display": display,
     };
     return _channel.invokeMethod("updateFloat", args);
-  } 
+  }
 }

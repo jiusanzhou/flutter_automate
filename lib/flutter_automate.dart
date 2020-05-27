@@ -16,11 +16,6 @@ class FlutterAutomate {
     return _channel.invokeMethod('init');
   }
 
-
-  Future<bool> waitForAccessibilityServiceEnabled() {
-    return _channel.invokeMethod('waitForAccessibilityServiceEnabled');
-  }
-
   Future<int> execute(String code, { String name: "main" }) async {
     Map<String, dynamic> args = <String, dynamic>{
       "name": name,
@@ -32,5 +27,16 @@ class FlutterAutomate {
 
   Future<int> stopAll() async {
     return await _channel.invokeMethod("stopAll", null);
+  }
+
+  Future<bool> checkServicePermission() {
+    return _channel.invokeMethod('checkServicePermission');
+  }
+
+  Future<bool> requestServicePermission({ int timeout: -1, bool wait: false }) {
+    return _channel.invokeMethod('requestServicePermission', <String, dynamic>{
+      "timeout": timeout,
+      "wait": wait,
+    });
   }
 }

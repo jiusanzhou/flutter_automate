@@ -13,12 +13,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
 
-  FlutterAutomate _automate = FlutterAutomate();
-
-  String _demoCode;
-
-  DefaultFactory _floatView;
-
   String repo = "https://cdn.jsdelivr.net/gh/moeapp/automate-hub";
   // repo = "assets/automate"
 
@@ -26,14 +20,12 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
-    _floatView = DefaultFactory(onFloatClick);
-
-    // 隐藏浮动窗
-    _floatView.updateFloat(display: false);
-
     PipelineRemoteProvider(repo).init().then((value) {
       setState(() {});
     });
+
+    // 设置点击响应函数
+    DefaultFactory.instance.setOnFloatClick(onFloatClick);
   }
 
   @override
@@ -59,27 +51,27 @@ class _HomePageState extends State<HomePage> {
         showToast("停止全部任务成功: $value");
 
         _running = false;
-        _floatView.updateFloat(text: "启动");
+        DefaultFactory.instance.updateFloat(text: "启动");
       });
 
 
       return;
     }
 
-    if (_floatView.code == null) {
+    if (DefaultFactory.instance.code == null) {
       showToast("暂无任务，请从工具箱内新建任务");
       return;
     }
 
     // 启动执行
-    FlutterAutomate.instance.execute(_floatView.code).then((value) {
+    FlutterAutomate.instance.execute(DefaultFactory.instance.code).then((value) {
       print("执行成功: $value");
       showToast("任务已启动成功~");
 
       _running = true;
 
       // 更新显示
-      _floatView.updateFloat(text: "停止");
+      DefaultFactory.instance.updateFloat(text: "停止");
     });
   }
 }

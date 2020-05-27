@@ -1,25 +1,24 @@
 package im.zoe.flutter_automate_example
 
+import android.os.Build.VERSION
+import android.os.Build.VERSION_CODES
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
 import android.view.View
-import android.widget.Button
-import android.widget.FrameLayout
 import android.widget.TextView
-import android.widget.Toast
-import androidx.annotation.NonNull
-import com.android.dx.cf.code.Frame
 import com.lzf.easyfloat.EasyFloat
 import com.lzf.easyfloat.enums.ShowPattern
 import com.lzf.easyfloat.enums.SidePattern
 import com.lzf.easyfloat.interfaces.OnInvokeView
 import com.lzf.easyfloat.interfaces.OnPermissionResult
 import com.lzf.easyfloat.permission.PermissionUtils
+import im.zoe.flutter_automate_example.utils.StorageDirectoryMapper
 import io.flutter.embedding.android.FlutterActivity
-import io.flutter.embedding.android.FlutterView
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.util.PathUtils
+
 
 class MainActivity: FlutterActivity(), MethodChannel.MethodCallHandler {
 
