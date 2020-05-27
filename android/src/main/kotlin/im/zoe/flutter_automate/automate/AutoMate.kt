@@ -132,6 +132,15 @@ class AutoMate private constructor(application: Application) : com.stardust.auto
         return scriptEngineService.stopAll()
     }
 
+    // 停止任务
+    fun stop(id: Int): Boolean {
+        // 先取得任务
+        var e = scriptEngineService.getScriptExecution(id)
+        if (e == null) return false
+        // TODO:
+        return false
+    }
+
     // 检查服务权限
     fun checkServicePermission(): Boolean {
         return AccessibilityServiceUtils.isAccessibilityServiceEnabled(application, AccessibilityService::class.java)

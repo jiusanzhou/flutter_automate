@@ -85,7 +85,7 @@ public class FlutterAutomatePlugin:
   // stream handler implement
 
   override fun onListen(arguments: Any, events: EventChannel.EventSink) {
-
+    // 开始监听了，注册GlobalListener
   }
 
   override fun onCancel(arguments: Any) {

@@ -1,5 +1,6 @@
 package im.zoe.flutter_automate.automate
 
+import android.annotation.SuppressLint
 import com.stardust.autojs.execution.ScriptExecution
 import com.stardust.autojs.execution.ScriptExecutionListener
 
@@ -12,7 +13,6 @@ class GlobalListener : ScriptExecutionListener {
     override fun onSuccess(execution: ScriptExecution, result: Any?) {
         onFinish(execution)
     }
-
 
     override fun onException(execution: ScriptExecution, e: Throwable) {
         onFinish(execution)
@@ -29,5 +29,9 @@ class GlobalListener : ScriptExecutionListener {
 
     companion object {
         private const val ENGINE_TAG_START_TIME = "start_time"
+
+
+        @SuppressLint("StaticFieldLeak")
+        lateinit var instance: GlobalListener private set
     }
 }
