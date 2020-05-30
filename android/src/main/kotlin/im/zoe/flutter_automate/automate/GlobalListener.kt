@@ -1,6 +1,7 @@
 package im.zoe.flutter_automate.automate
 
 import android.annotation.SuppressLint
+import android.util.Log
 import com.stardust.autojs.execution.ScriptExecution
 import com.stardust.autojs.execution.ScriptExecutionListener
 
@@ -15,6 +16,7 @@ class GlobalListener : ScriptExecutionListener {
     }
 
     override fun onException(execution: ScriptExecution, e: Throwable) {
+        Log.e("AUTOMATE_ENGINE", execution.source.name + ": " + e.message)
         onFinish(execution)
     }
 
@@ -22,9 +24,13 @@ class GlobalListener : ScriptExecutionListener {
         val millis = execution.engine.getTag(ENGINE_TAG_START_TIME) as Long? ?: return
         val seconds = (System.currentTimeMillis() - millis) / 1000.0
 
+        Log.i("AUTOMATE_ENGINE", execution.source.name + ": " + "done.")
+
         // TODO: update global console
 
         // TODO: send event to
+
+
     }
 
     companion object {
