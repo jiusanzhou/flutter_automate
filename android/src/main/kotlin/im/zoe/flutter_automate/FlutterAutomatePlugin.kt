@@ -20,7 +20,7 @@ import io.flutter.plugin.common.MethodChannel.*
 import io.flutter.plugin.common.PluginRegistry.Registrar
 import java.lang.Exception
 
-public class FlutterAutomatePlugin:
+class FlutterAutomatePlugin:
         FlutterPlugin,
         MethodCallHandler,
         EventChannel.StreamHandler,
