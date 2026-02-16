@@ -1,15 +1,15 @@
 group 'im.zoe.flutter_automate'
-version '1.0-SNAPSHOT'
+version '1.0.0'
 
 buildscript {
-    ext.kotlin_version = '1.3.50'
+    ext.kotlin_version = '2.1.0'
     repositories {
         google()
-        jcenter()
+        mavenCentral()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.5.0'
+        classpath 'com.android.tools.build:gradle:8.6.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -17,13 +17,7 @@ buildscript {
 rootProject.allprojects {
     repositories {
         google()
-        jcenter()
-        flatDir {
-            dirs project(':flutter_automate').file('libs')
-        }
-        maven {
-            url "https://jitpack.io"
-        }
+        mavenCentral()
     }
 }
 
@@ -31,55 +25,44 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 28
+    namespace 'im.zoe.flutter_automate'
+    compileSdk 34
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
+
     defaultConfig {
-        minSdkVersion 17
-        multiDexEnabled true
+        minSdk 24
+        targetSdk 34
     }
-    lintOptions {
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    lint {
         disable 'InvalidPackage'
     }
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'com.android.support:appcompat-v7:28'
-    implementation(name: 'autojs-release', ext: 'aar')
-    implementation(name: 'automator-release', ext: 'aar')
-    implementation(name: 'common-release', ext: 'aar')
-
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-
-    implementation 'androidx.appcompat:appcompat:1.1.0'
-    implementation 'androidx.cardview:cardview:1.0.0'
-    implementation 'com.google.android.material:material:1.1.0'
-    implementation 'androidx.multidex:multidex:2.0.1'
-    // implementation 'com.android.support:multidex:1.0.3'
-
-    implementation 'org.greenrobot:eventbus:3.0.0'
-    implementation 'net.lingala.zip4j:zip4j:1.3.2'
-    implementation 'com.github.hyb1996:EnhancedFloaty:0.31'
-    implementation 'com.github.hyb1996:settingscompat:1.1.5'
-    implementation 'com.makeramen:roundedimageview:2.3.0'
-    // OpenCv
-    implementation(name: 'opencv-3.4.3', ext: 'aar')
-    // OkHttp
-    implementation 'com.squareup.okhttp3:okhttp:3.11.0'
-    // JDeferred
-    implementation 'org.jdeferred:jdeferred-android-aar:1.2.6'
-    //RootShell
-    implementation 'com.github.Stericson:RootShell:1.6'
-    // Gson
-    implementation 'com.google.code.gson:gson:2.8.5'
-    // log4j
-    implementation group: 'de.mindpipe.android', name: 'android-logging-log4j', version: '1.0.3'
-    implementation group: 'log4j', name: 'log4j', version: '1.2.17'
-    // Terminal emulator
-    implementation(name: 'libtermexec-release', ext: 'aar')
-    implementation(name: 'emulatorview-release', ext: 'aar')
-    implementation(name: 'term-debug', ext: 'aar')
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.google.code.gson:gson:2.10.1'
 }
