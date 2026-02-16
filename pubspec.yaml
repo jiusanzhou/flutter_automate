@@ -1,9 +1,16 @@
 name: flutter_automate
-description: A multi-language automation framework for Android. Supports JavaScript, Python, and more via WASM runtime.
+description: A multi-language Android automation framework. Control UI, gestures, apps via Accessibility Service. Supports JavaScript scripting via WASM runtime. No Auto.js dependency.
 version: 1.0.0
 homepage: https://github.com/jiusanzhou/flutter_automate
 repository: https://github.com/jiusanzhou/flutter_automate
 issue_tracker: https://github.com/jiusanzhou/flutter_automate/issues
+
+topics:
+  - automation
+  - android
+  - accessibility
+  - ui-testing
+  - scripting
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
