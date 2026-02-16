@@ -3,4 +3,5 @@
     <string name="app_name">Flutter Automate</string>
     <string name="accessibility_service_label">Flutter Automate</string>
     <string name="accessibility_service_description">Flutter Automate 需要无障碍服务权限来实现自动化操作，包括：\n\n• 读取屏幕内容\n• 模拟点击和滑动\n• 自动填写文本\n• 控制其他应用\n\n此服务仅在您运行自动化脚本时使用，不会收集或上传任何数据。</string>
+    <string name="notification_listener_label">Flutter Automate 通知监听</string>
 </resources>
