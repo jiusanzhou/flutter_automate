@@ -165,7 +165,10 @@ class FlutterAutomatePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
     
     private fun handleIsAccessibilityEnabled(result: Result) {
-        result.success(AutomateAccessibilityService.isEnabled())
+        // 直接使用 AccessibilityServiceHelper 检查
+        val enabled = AccessibilityServiceHelper.isEnabled(context)
+        android.util.Log.i("FlutterAutomatePlugin", "isAccessibilityEnabled: $enabled")
+        result.success(enabled)
     }
     
     // ==================== 脚本执行处理 ====================
@@ -177,6 +180,8 @@ class FlutterAutomatePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
         val language = call.argument<String>("language") ?: "js"
         val filename = call.argument<String>("filename") ?: "main"
+        
+        android.util.Log.i("FlutterAutomatePlugin", "Execute script: language=$language, filename=$filename, code.length=${code.length}")
         
         val execution = scriptEngineManager?.execute(code, language, filename)
         

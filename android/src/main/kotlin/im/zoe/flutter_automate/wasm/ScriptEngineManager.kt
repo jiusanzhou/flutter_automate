@@ -3,6 +3,7 @@ package im.zoe.flutter_automate.wasm
 import android.content.Context
 import android.util.Log
 import im.zoe.flutter_automate.core.*
+import im.zoe.flutter_automate.quickjs.QuickJSEngine
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
@@ -10,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 脚本引擎管理器
- * 基于 WASM 运行时，支持多语言脚本执行
+ * 优先使用 QuickJS JNI，回退到 SimpleJsInterpreter
  */
 class ScriptEngineManager private constructor(private val context: Context) {
     
@@ -27,7 +28,11 @@ class ScriptEngineManager private constructor(private val context: Context) {
         }
     }
     
-    // WASM 运行时
+    // QuickJS 引擎 (高性能 JNI)
+    private var quickJSEngine: QuickJSEngine? = null
+    private var quickJSAvailable = false
+    
+    // WASM 运行时 (回退方案)
     private val wasmRuntime: WasmRuntime = ChicoryWasmRuntime()
     
     // 已加载的语言模块
@@ -43,8 +48,26 @@ class ScriptEngineManager private constructor(private val context: Context) {
     // ==================== 初始化 ====================
     
     init {
-        wasmRuntime.init(context)
-        Log.i(TAG, "ScriptEngineManager initialized with ${wasmRuntime.name} runtime")
+        // 优先尝试初始化 QuickJS JNI
+        try {
+            quickJSEngine = QuickJSEngine(context)
+            if (quickJSEngine!!.init()) {
+                quickJSAvailable = true
+                Log.i(TAG, "ScriptEngineManager initialized with QuickJS JNI (high performance)")
+            } else {
+                quickJSEngine = null
+                Log.w(TAG, "QuickJS JNI init failed, falling back to interpreter")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "QuickJS JNI not available: ${e.message}")
+            quickJSEngine = null
+        }
+        
+        // 初始化 WASM 运行时作为回退
+        if (!quickJSAvailable) {
+            wasmRuntime.init(context)
+            Log.i(TAG, "ScriptEngineManager initialized with ${wasmRuntime.name} runtime (fallback)")
+        }
     }
     
     /**
@@ -64,15 +87,14 @@ class ScriptEngineManager private constructor(private val context: Context) {
     }
     
     private fun loadJavaScriptModule(): LanguageModule {
-        // 加载 QuickJS WASM
-        val wasmModule = try {
-            wasmRuntime.loadModuleFromAssets(context, "wasm/quickjs.wasm")
-        } catch (e: Exception) {
-            Log.w(TAG, "QuickJS WASM not found, using embedded interpreter")
-            null
+        // 如果 QuickJS JNI 可用，优先使用
+        if (quickJSAvailable && quickJSEngine != null) {
+            return QuickJSLanguageModule(quickJSEngine!!, context)
         }
         
-        return JavaScriptLanguageModule(wasmModule, createHostFunctions())
+        // 回退到 SimpleJsInterpreter
+        Log.w(TAG, "Using SimpleJsInterpreter fallback")
+        return JavaScriptLanguageModule(null, createHostFunctions(), context)
     }
     
     private fun loadPythonModule(): LanguageModule {
@@ -116,7 +138,10 @@ class ScriptEngineManager private constructor(private val context: Context) {
         language: String = "js",
         filename: String = "main"
     ): ScriptExecution {
+        Log.i(TAG, "execute() called: language=$language, filename=$filename")
+        
         val module = loadLanguage(language)
+        Log.i(TAG, "Loaded language module: ${module.name}")
         
         val id = executionIdGenerator.incrementAndGet()
         val execution = ScriptExecution(
@@ -134,10 +159,13 @@ class ScriptEngineManager private constructor(private val context: Context) {
         // 异步执行
         Thread {
             try {
+                Log.i(TAG, "Starting script execution in thread")
                 val result = module.execute(code, filename)
+                Log.i(TAG, "Script execution completed: result=$result")
                 execution.result = ScriptResult.Success(result)
                 globalListeners.forEach { it.onSuccess(language, filename, result) }
             } catch (e: Throwable) {
+                Log.e(TAG, "Script execution error", e)
                 execution.result = ScriptResult.Error(e)
                 globalListeners.forEach { it.onError(language, filename, e) }
             } finally {
@@ -218,7 +246,8 @@ interface LanguageModule {
  */
 class JavaScriptLanguageModule(
     private val wasmModule: WasmModule?,
-    private val hostFunctions: HostFunctions
+    private val hostFunctions: HostFunctions,
+    private val context: Context
 ) : LanguageModule {
     
     override val name = "JavaScript"
@@ -243,34 +272,8 @@ class JavaScriptLanguageModule(
     }
     
     override fun execute(code: String, filename: String): Any? {
-        val inst = instance
-        if (inst != null) {
-            // 使用 WASM QuickJS
-            val memory = inst.getMemory() ?: throw IllegalStateException("No memory")
-            
-            // 写入代码到内存
-            val codePtr = allocateString(memory, code)
-            val filenamePtr = allocateString(memory, filename)
-            
-            // 调用 eval
-            return inst.call("js_eval", codePtr, filenamePtr)
-        } else {
-            // 回退到内置简单解释器
-            return SimpleJsInterpreter(hostFunctions).execute(code)
-        }
-    }
-    
-    private var heapPtr = 1024 * 1024 // 从 1MB 开始分配
-    
-    private fun allocateString(memory: WasmMemory, str: String): Int {
-        val bytes = str.toByteArray(Charsets.UTF_8)
-        val ptr = heapPtr
-        memory.writeBytes(ptr, bytes)
-        memory.writeBytes(ptr + bytes.size, byteArrayOf(0)) // null terminator
-        heapPtr += bytes.size + 1
-        // 对齐到 4 字节
-        heapPtr = (heapPtr + 3) and (-4)
-        return ptr
+        // 回退到内置简单解释器
+        return SimpleJsInterpreter(context).execute(code)
     }
     
     override fun stop() {
@@ -278,8 +281,31 @@ class JavaScriptLanguageModule(
     }
     
     override fun close() {
-        instance?.close()
-        wasmModule?.close()
+        // No resources to release
+    }
+}
+
+/**
+ * QuickJS JNI 高性能语言模块
+ */
+class QuickJSLanguageModule(
+    private val engine: im.zoe.flutter_automate.quickjs.QuickJSEngine,
+    private val context: Context
+) : LanguageModule {
+    
+    override val name = "JavaScript (QuickJS JNI)"
+    override val extensions = listOf("js", "mjs")
+    
+    override fun execute(code: String, filename: String): Any? {
+        return engine.eval(code, filename)
+    }
+    
+    override fun stop() {
+        engine.interrupt()
+    }
+    
+    override fun close() {
+        engine.destroy()
     }
 }
 

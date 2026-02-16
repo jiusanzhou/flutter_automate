@@ -1,0 +1,9 @@
+# ninja log v5
+6	93	1771224648891592360	CMakeFiles/quickjs_jni.dir/quickjs/cutils.c.o	494922d80c7f63ea
+5	112	1771224648909854845	CMakeFiles/quickjs_jni.dir/quickjs/libregexp.c.o	ccdadc22411ff7b0
+6	119	1771224648918031486	CMakeFiles/quickjs_jni.dir/quickjs/libunicode.c.o	d4983b3589ed93ff
+1	143	1771224648940507041	CMakeFiles/quickjs_jni.dir/quickjs_jni.cpp.o	9978121954564bc3
+7	162	1771224648957083990	CMakeFiles/quickjs_jni.dir/quickjs/quickjs-libc.c.o	f0222740ad7caa5
+2	182	1771224648979144296	CMakeFiles/quickjs_jni.dir/quickjs/libbf.c.o	b9c99ac556511876
+1	822	1771224649602890606	CMakeFiles/quickjs_jni.dir/quickjs/quickjs.c.o	c627fe16a8c95e39
+823	1026	1771224649821628926	/Users/zoe/projects/labs.zoe.im/flutter_automate/example/build/flutter_automate/intermediates/cxx/Debug/3jf4f5r3/obj/x86_64/libquickjs_jni.so	79e76d262cadfd3f

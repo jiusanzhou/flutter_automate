@@ -1,0 +1,37 @@
+[
+{
+  "directory": "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/3jf4f5r3/x86_64",
+  "command": "/Users/zoe/Library/Android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang++ --target=x86_64-none-linux-android24 --sysroot=/Users/zoe/Library/Android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/darwin-x86_64/sysroot -Dquickjs_jni_EXPORTS -I/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -O3 -fvisibility=hidden -std=c++17 -fno-limit-debug-info  -fPIC -o CMakeFiles/quickjs_jni.dir/quickjs_jni.cpp.o -c /Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs_jni.cpp",
+  "file": "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs_jni.cpp"
+},
+{
+  "directory": "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/3jf4f5r3/x86_64",
+  "command": "/Users/zoe/Library/Android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang --target=x86_64-none-linux-android24 --sysroot=/Users/zoe/Library/Android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/darwin-x86_64/sysroot -Dquickjs_jni_EXPORTS -I/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -DCONFIG_BIGNUM -DCONFIG_VERSION=\\\"2024-01-13\\\" -fno-limit-debug-info  -fPIC -o CMakeFiles/quickjs_jni.dir/quickjs/quickjs.c.o -c /Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs/quickjs.c",
+  "file": "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs/quickjs.c"
+},
+{
+  "directory": "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/3jf4f5r3/x86_64",
+  "command": "/Users/zoe/Library/Android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang --target=x86_64-none-linux-android24 --sysroot=/Users/zoe/Library/Android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/darwin-x86_64/sysroot -Dquickjs_jni_EXPORTS -I/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -DCONFIG_BIGNUM -DCONFIG_VERSION=\\\"2024-01-13\\\" -fno-limit-debug-info  -fPIC -o CMakeFiles/quickjs_jni.dir/quickjs/libbf.c.o -c /Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs/libbf.c",
+  "file": "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs/libbf.c"
+},
+{
+  "directory": "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/3jf4f5r3/x86_64",
+  "command": "/Users/zoe/Library/Android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang --target=x86_64-none-linux-android24 --sysroot=/Users/zoe/Library/Android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/darwin-x86_64/sysroot -Dquickjs_jni_EXPORTS -I/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -DCONFIG_BIGNUM -DCONFIG_VERSION=\\\"2024-01-13\\\" -fno-limit-debug-info  -fPIC -o CMakeFiles/quickjs_jni.dir/quickjs/libregexp.c.o -c /Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs/libregexp.c",
+  "file": "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs/libregexp.c"
+},
+{
+  "directory": "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/3jf4f5r3/x86_64",
+  "command": "/Users/zoe/Library/Android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang --target=x86_64-none-linux-android24 --sysroot=/Users/zoe/Library/Android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/darwin-x86_64/sysroot -Dquickjs_jni_EXPORTS -I/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -DCONFIG_BIGNUM -DCONFIG_VERSION=\\\"2024-01-13\\\" -fno-limit-debug-info  -fPIC -o CMakeFiles/quickjs_jni.dir/quickjs/libunicode.c.o -c /Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs/libunicode.c",
+  "file": "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs/libunicode.c"
+},
+{
+  "directory": "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/3jf4f5r3/x86_64",
+  "command": "/Users/zoe/Library/Android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang --target=x86_64-none-linux-android24 --sysroot=/Users/zoe/Library/Android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/darwin-x86_64/sysroot -Dquickjs_jni_EXPORTS -I/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -DCONFIG_BIGNUM -DCONFIG_VERSION=\\\"2024-01-13\\\" -fno-limit-debug-info  -fPIC -o CMakeFiles/quickjs_jni.dir/quickjs/cutils.c.o -c /Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs/cutils.c",
+  "file": "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs/cutils.c"
+},
+{
+  "directory": "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/3jf4f5r3/x86_64",
+  "command": "/Users/zoe/Library/Android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang --target=x86_64-none-linux-android24 --sysroot=/Users/zoe/Library/Android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/darwin-x86_64/sysroot -Dquickjs_jni_EXPORTS -I/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -DCONFIG_BIGNUM -DCONFIG_VERSION=\\\"2024-01-13\\\" -fno-limit-debug-info  -fPIC -o CMakeFiles/quickjs_jni.dir/quickjs/quickjs-libc.c.o -c /Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs/quickjs-libc.c",
+  "file": "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/quickjs/quickjs-libc.c"
+}
+]

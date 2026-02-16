@@ -4,6 +4,7 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.*
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -315,14 +316,9 @@ object HttpUtils {
     // 扩展函数
     private fun String.toHttpUrlOrNull(): HttpUrl? {
         return try {
-            HttpUrl.Builder().parse(null, this).build()
+            this.toHttpUrl()
         } catch (e: Exception) {
-            try {
-                // 尝试直接解析
-                okhttp3.HttpUrl.parse(this)
-            } catch (e2: Exception) {
-                null
-            }
+            null
         }
     }
 }

@@ -33,7 +33,18 @@ class AutomateAccessibilityService : AccessibilityService() {
         /**
          * 检查服务是否已启用
          */
-        fun isEnabled(): Boolean = instance != null
+        fun isEnabled(): Boolean {
+            // 优先检查 instance
+            if (instance != null) return true
+            
+            // 如果 instance 为空，检查系统设置
+            return try {
+                val context = instance?.applicationContext ?: return false
+                AccessibilityServiceHelper.isEnabled(context)
+            } catch (e: Exception) {
+                false
+            }
+        }
 
         /**
          * 等待服务启用

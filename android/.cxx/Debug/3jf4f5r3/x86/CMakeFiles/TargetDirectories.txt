@@ -1,0 +1,3 @@
+/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/3jf4f5r3/x86/CMakeFiles/quickjs_jni.dir
+/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/3jf4f5r3/x86/CMakeFiles/edit_cache.dir
+/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/3jf4f5r3/x86/CMakeFiles/rebuild_cache.dir
