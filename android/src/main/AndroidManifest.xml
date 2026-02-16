@@ -32,16 +32,8 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
         
-        <!-- 通知监听服务 -->
-        <service
-            android:name=".core.NotificationListener"
-            android:label="@string/notification_listener_label"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
-        </service>
+        <!-- 通知监听服务由 flutter_notification_listener 提供 -->
+        <!-- 悬浮窗服务由 flutter_floatwing 提供 -->
         
     </application>
     

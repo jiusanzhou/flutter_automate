@@ -54,6 +54,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_floatwing:
+    dependency: "direct main"
+    description:
+      path: "../flutter_floatwing"
+      relative: true
+    source: path
+    version: "0.3.0"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -62,6 +69,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  flutter_notification_listener:
+    dependency: "direct main"
+    description:
+      path: "../flutter_notification_listener"
+      relative: true
+    source: path
+    version: "1.4.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter

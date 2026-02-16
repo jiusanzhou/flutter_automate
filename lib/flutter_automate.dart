@@ -1,5 +1,10 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/services.dart';
+
+// 导出依赖的插件，方便用户直接使用
+export 'package:flutter_floatwing/flutter_floatwing.dart';
+export 'package:flutter_notification_listener/flutter_notification_listener.dart';
 
 /// Flutter Automate - 多语言自动化框架
 class FlutterAutomate {
@@ -199,21 +204,37 @@ class FlutterAutomate {
     return result ?? false;
   }
 
-  /// 截屏
+  /// 截屏（全局操作）
   Future<bool> takeScreenshot() async {
     final result = await _channel.invokeMethod<bool>('takeScreenshot');
     return result ?? false;
   }
 
-  // ==================== 应用管理 ====================
+  // ==================== 子模块 ====================
 
   /// 应用管理
   AppManager get app => AppManager._(_channel);
 
-  // ==================== 设备 ====================
-
   /// 设备管理
   DeviceManager get device => DeviceManager._(_channel);
+
+  /// 截图管理
+  ScreenCaptureManager get capture => ScreenCaptureManager._(_channel);
+
+  /// 图像处理
+  ImageManager get images => ImageManager._(_channel);
+
+  /// 文件管理
+  FileManager get files => FileManager._(_channel);
+
+  /// Shell 命令
+  ShellManager get shell => ShellManager._(_channel);
+
+  /// HTTP 请求
+  HttpManager get http => HttpManager._(_channel);
+
+  /// 对话框
+  DialogManager get dialogs => DialogManager._(_channel);
 }
 
 // ==================== UI 选择器 ====================
@@ -621,5 +642,488 @@ class DeviceInfo {
       screenDensity: (map['screenDensity'] as num?)?.toDouble() ?? 1.0,
       androidId: map['androidId'] as String? ?? '',
     );
+  }
+}
+
+// ==================== 截图管理 ====================
+
+class ScreenCaptureManager {
+  final MethodChannel _channel;
+
+  ScreenCaptureManager._(this._channel);
+
+  /// 检查截图权限
+  Future<bool> hasPermission() async {
+    final result = await _channel.invokeMethod<bool>('captureHasPermission');
+    return result ?? false;
+  }
+
+  /// 请求截图权限
+  Future<bool> requestPermission() async {
+    final result = await _channel.invokeMethod<bool>('captureRequestPermission');
+    return result ?? false;
+  }
+
+  /// 截取屏幕
+  Future<Uint8List?> capture() async {
+    final result = await _channel.invokeMethod<Uint8List>('captureScreen');
+    return result;
+  }
+
+  /// 截取屏幕并保存到文件
+  Future<bool> captureToFile(String path, {int quality = 90}) async {
+    final result = await _channel.invokeMethod<bool>('captureToFile', {
+      'path': path,
+      'quality': quality,
+    });
+    return result ?? false;
+  }
+
+  /// 释放资源
+  Future<void> release() async {
+    await _channel.invokeMethod('captureRelease');
+  }
+}
+
+// ==================== 图像处理 ====================
+
+class ImageManager {
+  final MethodChannel _channel;
+
+  ImageManager._(this._channel);
+
+  /// 在图片中查找颜色
+  Future<Point?> findColor(
+    int color, {
+    int threshold = 4,
+    List<int>? region,
+  }) async {
+    final result = await _channel.invokeMethod<Map>('imageFindColor', {
+      'color': color,
+      'threshold': threshold,
+      'region': region,
+    });
+    if (result == null) return null;
+    return Point(result['x'] as int, result['y'] as int);
+  }
+
+  /// 多点找色
+  Future<Point?> findMultiColors(
+    int firstColor,
+    List<List<int>> colorOffsets, {
+    int threshold = 4,
+    List<int>? region,
+  }) async {
+    final result = await _channel.invokeMethod<Map>('imageFindMultiColors', {
+      'firstColor': firstColor,
+      'colorOffsets': colorOffsets,
+      'threshold': threshold,
+      'region': region,
+    });
+    if (result == null) return null;
+    return Point(result['x'] as int, result['y'] as int);
+  }
+
+  /// 检测指定位置是否为某颜色
+  Future<bool> detectsColor(int color, int x, int y, {int threshold = 16}) async {
+    final result = await _channel.invokeMethod<bool>('imageDetectsColor', {
+      'color': color,
+      'x': x,
+      'y': y,
+      'threshold': threshold,
+    });
+    return result ?? false;
+  }
+
+  /// 获取像素颜色
+  Future<int> getPixel(int x, int y) async {
+    final result = await _channel.invokeMethod<int>('imageGetPixel', {
+      'x': x,
+      'y': y,
+    });
+    return result ?? 0;
+  }
+
+  /// 找图
+  Future<MatchResult?> findImage(
+    String templatePath, {
+    double threshold = 0.9,
+    List<int>? region,
+  }) async {
+    final result = await _channel.invokeMethod<Map>('imageFindImage', {
+      'templatePath': templatePath,
+      'threshold': threshold,
+      'region': region,
+    });
+    if (result == null) return null;
+    return MatchResult(
+      result['x'] as int,
+      result['y'] as int,
+      (result['similarity'] as num).toDouble(),
+    );
+  }
+
+  /// 读取图片
+  Future<Uint8List?> read(String path) async {
+    return await _channel.invokeMethod<Uint8List>('imageRead', {'path': path});
+  }
+
+  /// 保存图片
+  Future<bool> save(Uint8List bytes, String path, {int quality = 90}) async {
+    final result = await _channel.invokeMethod<bool>('imageSave', {
+      'bytes': bytes,
+      'path': path,
+      'quality': quality,
+    });
+    return result ?? false;
+  }
+}
+
+class Point {
+  final int x;
+  final int y;
+
+  Point(this.x, this.y);
+
+  @override
+  String toString() => 'Point($x, $y)';
+}
+
+class MatchResult {
+  final int x;
+  final int y;
+  final double similarity;
+
+  MatchResult(this.x, this.y, this.similarity);
+
+  @override
+  String toString() => 'MatchResult($x, $y, ${similarity.toStringAsFixed(2)})';
+}
+
+// ==================== 文件管理 ====================
+
+class FileManager {
+  final MethodChannel _channel;
+
+  FileManager._(this._channel);
+
+  /// 读取文本文件
+  Future<String?> read(String path) async {
+    return await _channel.invokeMethod<String>('fileRead', {'path': path});
+  }
+
+  /// 读取字节
+  Future<Uint8List?> readBytes(String path) async {
+    return await _channel.invokeMethod<Uint8List>('fileReadBytes', {'path': path});
+  }
+
+  /// 写入文本
+  Future<bool> write(String path, String text) async {
+    final result = await _channel.invokeMethod<bool>('fileWrite', {
+      'path': path,
+      'text': text,
+    });
+    return result ?? false;
+  }
+
+  /// 追加文本
+  Future<bool> append(String path, String text) async {
+    final result = await _channel.invokeMethod<bool>('fileAppend', {
+      'path': path,
+      'text': text,
+    });
+    return result ?? false;
+  }
+
+  /// 文件是否存在
+  Future<bool> exists(String path) async {
+    final result = await _channel.invokeMethod<bool>('fileExists', {'path': path});
+    return result ?? false;
+  }
+
+  /// 是否是文件
+  Future<bool> isFile(String path) async {
+    final result = await _channel.invokeMethod<bool>('fileIsFile', {'path': path});
+    return result ?? false;
+  }
+
+  /// 是否是目录
+  Future<bool> isDir(String path) async {
+    final result = await _channel.invokeMethod<bool>('fileIsDir', {'path': path});
+    return result ?? false;
+  }
+
+  /// 创建目录
+  Future<bool> createDir(String path) async {
+    final result = await _channel.invokeMethod<bool>('fileCreateDir', {'path': path});
+    return result ?? false;
+  }
+
+  /// 删除文件或目录
+  Future<bool> remove(String path) async {
+    final result = await _channel.invokeMethod<bool>('fileRemove', {'path': path});
+    return result ?? false;
+  }
+
+  /// 复制文件
+  Future<bool> copy(String src, String dst) async {
+    final result = await _channel.invokeMethod<bool>('fileCopy', {
+      'src': src,
+      'dst': dst,
+    });
+    return result ?? false;
+  }
+
+  /// 移动文件
+  Future<bool> move(String src, String dst) async {
+    final result = await _channel.invokeMethod<bool>('fileMove', {
+      'src': src,
+      'dst': dst,
+    });
+    return result ?? false;
+  }
+
+  /// 列出目录内容
+  Future<List<String>> listDir(String path) async {
+    final result = await _channel.invokeMethod<List>('fileListDir', {'path': path});
+    return result?.cast<String>() ?? [];
+  }
+
+  /// 获取文件大小
+  Future<int> getSize(String path) async {
+    final result = await _channel.invokeMethod<int>('fileGetSize', {'path': path});
+    return result ?? -1;
+  }
+}
+
+// ==================== Shell 命令 ====================
+
+class ShellManager {
+  final MethodChannel _channel;
+
+  ShellManager._(this._channel);
+
+  /// 执行命令
+  Future<ShellResult> exec(String command, {bool root = false, int timeout = 30000}) async {
+    final result = await _channel.invokeMethod<Map>('shellExec', {
+      'command': command,
+      'root': root,
+      'timeout': timeout,
+    });
+    return ShellResult.fromMap(Map<String, dynamic>.from(result ?? {}));
+  }
+
+  /// 检查是否有 Root 权限
+  Future<bool> hasRoot() async {
+    final result = await _channel.invokeMethod<bool>('shellHasRoot');
+    return result ?? false;
+  }
+
+  /// 输入文本
+  Future<bool> inputText(String text) async {
+    final result = await _channel.invokeMethod<bool>('shellInputText', {'text': text});
+    return result ?? false;
+  }
+
+  /// 模拟按键
+  Future<bool> inputKeyEvent(int keyCode) async {
+    final result = await _channel.invokeMethod<bool>('shellInputKeyEvent', {'keyCode': keyCode});
+    return result ?? false;
+  }
+}
+
+class ShellResult {
+  final int code;
+  final String output;
+  final String error;
+  final bool success;
+
+  ShellResult._({
+    required this.code,
+    required this.output,
+    required this.error,
+    required this.success,
+  });
+
+  factory ShellResult.fromMap(Map<String, dynamic> map) {
+    return ShellResult._(
+      code: map['code'] as int? ?? -1,
+      output: map['output'] as String? ?? '',
+      error: map['error'] as String? ?? '',
+      success: map['success'] as bool? ?? false,
+    );
+  }
+}
+
+// ==================== HTTP 请求 ====================
+
+class HttpManager {
+  final MethodChannel _channel;
+
+  HttpManager._(this._channel);
+
+  /// GET 请求
+  Future<HttpResponse> get(
+    String url, {
+    Map<String, String>? headers,
+    Map<String, String>? params,
+  }) async {
+    final result = await _channel.invokeMethod<Map>('httpGet', {
+      'url': url,
+      'headers': headers,
+      'params': params,
+    });
+    return HttpResponse.fromMap(Map<String, dynamic>.from(result ?? {}));
+  }
+
+  /// POST 请求
+  Future<HttpResponse> post(
+    String url, {
+    Map<String, String>? data,
+    Map<String, String>? headers,
+  }) async {
+    final result = await _channel.invokeMethod<Map>('httpPost', {
+      'url': url,
+      'data': data,
+      'headers': headers,
+    });
+    return HttpResponse.fromMap(Map<String, dynamic>.from(result ?? {}));
+  }
+
+  /// POST JSON 请求
+  Future<HttpResponse> postJson(
+    String url,
+    String json, {
+    Map<String, String>? headers,
+  }) async {
+    final result = await _channel.invokeMethod<Map>('httpPostJson', {
+      'url': url,
+      'json': json,
+      'headers': headers,
+    });
+    return HttpResponse.fromMap(Map<String, dynamic>.from(result ?? {}));
+  }
+
+  /// 下载文件
+  Future<bool> download(String url, String savePath, {Map<String, String>? headers}) async {
+    final result = await _channel.invokeMethod<bool>('httpDownload', {
+      'url': url,
+      'savePath': savePath,
+      'headers': headers,
+    });
+    return result ?? false;
+  }
+}
+
+class HttpResponse {
+  final int code;
+  final String body;
+  final Map<String, String> headers;
+  final bool success;
+
+  HttpResponse._({
+    required this.code,
+    required this.body,
+    required this.headers,
+    required this.success,
+  });
+
+  factory HttpResponse.fromMap(Map<String, dynamic> map) {
+    return HttpResponse._(
+      code: map['code'] as int? ?? -1,
+      body: map['body'] as String? ?? '',
+      headers: Map<String, String>.from(map['headers'] as Map? ?? {}),
+      success: map['success'] as bool? ?? false,
+    );
+  }
+}
+
+// ==================== 对话框 ====================
+
+class DialogManager {
+  final MethodChannel _channel;
+
+  DialogManager._(this._channel);
+
+  /// 显示 Toast
+  Future<void> toast(String message, {bool long = false}) async {
+    await _channel.invokeMethod('dialogToast', {
+      'message': message,
+      'long': long,
+    });
+  }
+
+  /// 警告对话框
+  Future<bool> alert(String title, String message, {String confirmText = '确定'}) async {
+    final result = await _channel.invokeMethod<bool>('dialogAlert', {
+      'title': title,
+      'message': message,
+      'confirmText': confirmText,
+    });
+    return result ?? false;
+  }
+
+  /// 确认对话框
+  Future<bool> confirm(
+    String title,
+    String message, {
+    String confirmText = '确定',
+    String cancelText = '取消',
+  }) async {
+    final result = await _channel.invokeMethod<bool>('dialogConfirm', {
+      'title': title,
+      'message': message,
+      'confirmText': confirmText,
+      'cancelText': cancelText,
+    });
+    return result ?? false;
+  }
+
+  /// 输入对话框
+  Future<String?> input(
+    String title, {
+    String? message,
+    String defaultValue = '',
+    String hint = '',
+  }) async {
+    return await _channel.invokeMethod<String>('dialogInput', {
+      'title': title,
+      'message': message,
+      'defaultValue': defaultValue,
+      'hint': hint,
+    });
+  }
+
+  /// 单选对话框
+  Future<int> singleChoice(String title, List<String> items, {int selectedIndex = -1}) async {
+    final result = await _channel.invokeMethod<int>('dialogSingleChoice', {
+      'title': title,
+      'items': items,
+      'selectedIndex': selectedIndex,
+    });
+    return result ?? -1;
+  }
+
+  /// 多选对话框
+  Future<List<int>> multiChoice(
+    String title,
+    List<String> items, {
+    List<int> selectedIndices = const [],
+  }) async {
+    final result = await _channel.invokeMethod<List>('dialogMultiChoice', {
+      'title': title,
+      'items': items,
+      'selectedIndices': selectedIndices,
+    });
+    return result?.cast<int>() ?? [];
+  }
+
+  /// 列表选择对话框
+  Future<int> select(String title, List<String> items) async {
+    final result = await _channel.invokeMethod<int>('dialogSelect', {
+      'title': title,
+      'items': items,
+    });
+    return result ?? -1;
   }
 }
