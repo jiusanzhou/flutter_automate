@@ -5,6 +5,31 @@ import 'package:flutter/services.dart';
 export 'package:flutter_floatwing/flutter_floatwing.dart';
 export 'package:flutter_notification_listener/flutter_notification_listener.dart';
 
+/// Recursively convert Map<Object?, Object?> to Map<String, dynamic>
+Map<String, dynamic> _convertMap(Map map) {
+  return map.map((key, value) {
+    final k = key?.toString() ?? '';
+    if (value is Map) {
+      return MapEntry(k, _convertMap(value));
+    } else if (value is List) {
+      return MapEntry(k, _convertList(value));
+    }
+    return MapEntry(k, value);
+  });
+}
+
+/// Recursively convert List with nested maps
+List<dynamic> _convertList(List list) {
+  return list.map((item) {
+    if (item is Map) {
+      return _convertMap(item);
+    } else if (item is List) {
+      return _convertList(item);
+    }
+    return item;
+  }).toList();
+}
+
 /// Flutter Automate - 多语言自动化框架
 class FlutterAutomate {
   static const MethodChannel _channel =
@@ -118,7 +143,7 @@ class FlutterAutomate {
     if (result == null) {
       return UiTree(elements: [], packageName: null, activityName: null);
     }
-    return UiTree.fromMap(Map<String, dynamic>.from(result));
+    return UiTree.fromMap(_convertMap(result));
   }
 
   // ==================== 手势 ====================
@@ -859,7 +884,8 @@ class UiElement {
   });
 
   factory UiElement.fromMap(Map<String, dynamic> map) {
-    final boundsMap = map['bounds'] as Map<String, dynamic>?;
+    final boundsRaw = map['bounds'];
+    final boundsMap = boundsRaw != null ? Map<String, dynamic>.from(boundsRaw as Map) : null;
     return UiElement(
       index: map['index'] as int? ?? 0,
       type: map['type'] as String? ?? 'view',
@@ -1025,7 +1051,20 @@ class DeviceManager {
   /// 获取设备信息
   Future<DeviceInfo> info() async {
     final result = await _channel.invokeMethod<Map>('deviceInfo');
-    return DeviceInfo.fromMap(Map<String, dynamic>.from(result ?? {}));
+    if (result == null) {
+      return DeviceInfo._(
+        model: '',
+        brand: '',
+        manufacturer: '',
+        sdkVersion: 0,
+        androidVersion: '',
+        screenWidth: 1080,
+        screenHeight: 1920,
+        screenDensity: 1.0,
+        androidId: '',
+      );
+    }
+    return DeviceInfo.fromMap(_convertMap(result));
   }
 
   /// 获取剪贴板

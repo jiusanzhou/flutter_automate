@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-02-20
+
+### Fixed
+- 🐛 Map type cast error when parsing MethodChannel results
+- Add `_convertMap()` helper to recursively convert `Map<Object?, Object?>` to `Map<String, dynamic>`
+- Fix `dumpUI()`, `device.info()`, and `UiElement.fromMap()` type handling
+
 ## [1.1.0] - 2026-02-20
 
 ### Added
