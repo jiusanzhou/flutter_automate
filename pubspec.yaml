@@ -19,12 +19,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # 悬浮窗 - 使用 jiusanzhou 的项目 (本地开发)
-  flutter_floatwing:
-    path: ../flutter_floatwing
-  # 通知监听 - 使用 jiusanzhou 的项目 (本地开发)
-  flutter_notification_listener:
-    path: ../flutter_notification_listener
+  # 悬浮窗
+  flutter_floatwing: ^0.2.1
+  # 通知监听
+  flutter_notification_listener: ^1.4.0
 
 dev_dependencies:
   flutter_test:
