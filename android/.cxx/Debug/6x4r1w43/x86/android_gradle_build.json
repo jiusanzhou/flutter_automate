@@ -1,0 +1,40 @@
+{
+  "buildFiles": [
+    "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/zoe/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/6x4r1w43/x86",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/zoe/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/6x4r1w43/x86",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "quickjs_jni::@6890427a1f51a3e7e1df": {
+      "toolchain": "toolchain",
+      "abi": "x86",
+      "artifactName": "quickjs_jni",
+      "output": "/Users/zoe/projects/labs.zoe.im/automagent/build/flutter_automate/intermediates/cxx/Debug/6x4r1w43/obj/x86/libquickjs_jni.so",
+      "runtimeFiles": []
+    }
+  },
+  "toolchains": {
+    "toolchain": {
+      "cCompilerExecutable": "/Users/zoe/Library/Android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang.lld",
+      "cppCompilerExecutable": "/Users/zoe/Library/Android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang++.lld"
+    }
+  },
+  "cFileExtensions": [
+    "c"
+  ],
+  "cppFileExtensions": [
+    "cpp"
+  ]
+}

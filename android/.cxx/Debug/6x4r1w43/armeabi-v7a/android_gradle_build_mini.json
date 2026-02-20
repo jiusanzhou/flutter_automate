@@ -1,0 +1,27 @@
+{
+  "buildFiles": [
+    "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/zoe/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/6x4r1w43/armeabi-v7a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/zoe/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/6x4r1w43/armeabi-v7a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "quickjs_jni::@6890427a1f51a3e7e1df": {
+      "artifactName": "quickjs_jni",
+      "abi": "armeabi-v7a",
+      "output": "/Users/zoe/projects/labs.zoe.im/automagent/build/flutter_automate/intermediates/cxx/Debug/6x4r1w43/obj/armeabi-v7a/libquickjs_jni.so",
+      "runtimeFiles": []
+    }
+  }
+}

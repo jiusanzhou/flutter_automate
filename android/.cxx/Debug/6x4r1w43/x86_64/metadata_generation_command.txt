@@ -1,0 +1,20 @@
+                        -H/Users/zoe/projects/labs.zoe.im/flutter_automate/android/src/main/cpp
+-DCMAKE_SYSTEM_NAME=Android
+-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+-DCMAKE_SYSTEM_VERSION=24
+-DANDROID_PLATFORM=android-24
+-DANDROID_ABI=x86_64
+-DCMAKE_ANDROID_ARCH_ABI=x86_64
+-DANDROID_NDK=/Users/zoe/Library/Android/sdk/ndk/27.0.12077973
+-DCMAKE_ANDROID_NDK=/Users/zoe/Library/Android/sdk/ndk/27.0.12077973
+-DCMAKE_TOOLCHAIN_FILE=/Users/zoe/Library/Android/sdk/ndk/27.0.12077973/build/cmake/android.toolchain.cmake
+-DCMAKE_MAKE_PROGRAM=/Users/zoe/Library/Android/sdk/cmake/3.22.1/bin/ninja
+-DCMAKE_CXX_FLAGS=-O3 -fvisibility=hidden
+-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/Users/zoe/projects/labs.zoe.im/automagent/build/flutter_automate/intermediates/cxx/Debug/6x4r1w43/obj/x86_64
+-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/Users/zoe/projects/labs.zoe.im/automagent/build/flutter_automate/intermediates/cxx/Debug/6x4r1w43/obj/x86_64
+-DCMAKE_BUILD_TYPE=Debug
+-B/Users/zoe/projects/labs.zoe.im/flutter_automate/android/.cxx/Debug/6x4r1w43/x86_64
+-GNinja
+-DANDROID_STL=c++_shared
+                        Build command args: []
+                        Version: 2
