@@ -10,8 +10,6 @@ dependencies:
     sdk: flutter
   flutter_automate:
     path: ../
-  flutter_floatwing:
-    path: ../../flutter_floatwing
   cupertino_icons: ^1.0.6
 
 dev_dependencies:

@@ -19,10 +19,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # 悬浮窗
-  flutter_floatwing: ^0.2.1
-  # 通知监听
-  flutter_notification_listener: ^1.4.0
+  # 悬浮窗 - 使用 jiusanzhou 的 fork
+  flutter_floatwing:
+    git:
+      url: https://github.com/jiusanzhou/flutter_floatwing.git
+  # 通知监听 - 使用 jiusanzhou 的 fork
+  flutter_notification_listener:
+    git:
+      url: https://github.com/jiusanzhou/flutter_notification_listener.git
 
 dev_dependencies:
   flutter_test:
