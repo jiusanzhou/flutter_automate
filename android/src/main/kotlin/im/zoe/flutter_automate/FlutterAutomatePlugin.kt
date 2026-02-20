@@ -141,9 +141,42 @@ class FlutterAutomatePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             "getLogFiles" -> handleGetLogFiles(result)
             "readLogFile" -> handleReadLogFile(call, result)
             "clearLogs" -> handleClearLogs(result)
+            "subscribeLog" -> handleSubscribeLog(call, result)
+            "unsubscribeLog" -> handleUnsubscribeLog(result)
             
             else -> result.notImplemented()
         }
+    }
+    
+    // ==================== 日志订阅 ====================
+    
+    private var logSubscribed = false
+    
+    private fun handleSubscribeLog(call: MethodCall, result: Result) {
+        if (logSubscribed) {
+            result.success(true)
+            return
+        }
+        
+        scriptEngineManager?.getQuickJSEngine()?.setLogCallback(object : im.zoe.flutter_automate.quickjs.QuickJSEngine.LogCallback {
+            override fun onLog(level: String, message: String) {
+                scope.launch(Dispatchers.Main) {
+                    channel.invokeMethod("onScriptLog", mapOf(
+                        "level" to level,
+                        "message" to message,
+                        "timestamp" to System.currentTimeMillis()
+                    ))
+                }
+            }
+        })
+        logSubscribed = true
+        result.success(true)
+    }
+    
+    private fun handleUnsubscribeLog(result: Result) {
+        scriptEngineManager?.getQuickJSEngine()?.setLogCallback(null)
+        logSubscribed = false
+        result.success(true)
     }
     
     // ==================== 初始化处理 ====================

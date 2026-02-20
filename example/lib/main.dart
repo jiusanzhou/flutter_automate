@@ -17,6 +17,8 @@ void floatWindowMain() {
 // ==================== 展开面板入口点 ====================
 @pragma('vm:entry-point')
 void floatPanelMain() {
+  WidgetsFlutterBinding.ensureInitialized();
+  print('[floatPanelMain] Starting TaskPanel');
   runApp(const TaskPanel());
 }
 
@@ -58,6 +60,9 @@ class _HomePageState extends State<HomePage> {
   String _taskStatus = '空闲';
   
   Window? _bubbleWindow;
+  
+  // 日志订阅
+  StreamSubscription<LogEntry>? _logSubscription;
 
   final String _defaultScript = '''// Auto.js API 兼容性测试
 console.log("=== Flutter Automate API Test ===");
@@ -177,13 +182,23 @@ toast("API 测试完成!");
   
   Future<void> _init() async {
     await _checkPermissions();
+    await _subscribeLog();
     Future.delayed(const Duration(milliseconds: 500), () {
       _initFloatwing();
     });
   }
   
+  Future<void> _subscribeLog() async {
+    await automate.logs.subscribe();
+    _logSubscription = automate.logs.stream.listen((entry) {
+      _addLog('[JS] ${entry.message}');
+    });
+  }
+  
   @override
   void dispose() {
+    _logSubscription?.cancel();
+    automate.logs.unsubscribe();
     _scriptController.dispose();
     super.dispose();
   }
@@ -303,8 +318,8 @@ toast("API 测试完成!");
       
       final config = WindowConfig(
         id: 'automate_bubble',
-        width: 56,
-        height: 56,
+        width: 168,  // 56 * 3 (pixelRatio)
+        height: 168,
         x: 0,
         y: 400,
         draggable: true,
@@ -573,6 +588,7 @@ class _AssistiveBubbleState extends State<AssistiveBubble> with TickerProviderSt
         width: WindowSize.MatchParent,
         height: WindowSize.MatchParent,
         clickable: true,
+        focusable: true,  // 需要可聚焦才能接收触摸事件
         entry: 'floatPanelMain',
       );
       panel = await floatwing.createWindow('automate_panel', config, start: false);
@@ -592,14 +608,14 @@ class _AssistiveBubbleState extends State<AssistiveBubble> with TickerProviderSt
   Widget build(BuildContext context) {
     final hasTask = _taskCount > 0;
     
-        return MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: GestureDetector(
         onTap: _onTap,
         child: ScaleTransition(
           scale: _scaleController,
           child: AnimatedOpacity(
-            opacity: _isIdle ? 0.4 : 1.0,
+            opacity: _isIdle ? 0.3 : 1.0,
             duration: const Duration(milliseconds: 300),
             child: Container(
               height: 56,
@@ -617,33 +633,29 @@ class _AssistiveBubbleState extends State<AssistiveBubble> with TickerProviderSt
                   color: hasTask ? Colors.blue.withOpacity(0.6) : Colors.grey[400]!.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Stack(
+                child: Container(
+                  height: 32,
+                  width: 32,
                   alignment: Alignment.center,
-                  children: [
-                    if (hasTask)
-                      const SizedBox(
-                        width: 32, height: 32,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
-                      ),
-                    Container(
-                      height: 24,
-                      width: 24,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: hasTask ? Colors.blue : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '$_taskCount',
-                        style: TextStyle(
-                          color: hasTask ? Colors.white : Colors.grey[800],
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
+                  decoration: BoxDecoration(
+                    color: hasTask ? Colors.blue.withOpacity(0.8) : Colors.grey[300]!.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Container(
+                    height: 24,
+                    width: 24,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: hasTask ? Colors.blue : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
+                    child: hasTask 
+                      ? const SizedBox(
+                          width: 16, height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const SizedBox.shrink(),
+                  ),
                 ),
               ),
             ),
@@ -687,10 +699,13 @@ class _TaskPanelState extends State<TaskPanel> with SingleTickerProviderStateMix
 
   Future<void> _initWindow() async {
     _window = Window.of(context);
+    print('[TaskPanel] _initWindow: _window=$_window');
     _window?.on(EventType.WindowStarted, (w, d) {
+      print('[TaskPanel] WindowStarted event received');
       setState(() => _show = true);
     });
     _window?.onData((source, name, data) async {
+      print('[TaskPanel] onData: source=$source, name=$name, data=$data');
       if (data is List && data.length >= 2) {
         setState(() {
           _bubbleX = (data[0] as num).toDouble();
@@ -699,114 +714,117 @@ class _TaskPanelState extends State<TaskPanel> with SingleTickerProviderStateMix
       }
       return null;
     });
+    // 直接设置 show=true 来测试
+    setState(() => _show = true);
   }
 
   void _close() {
     setState(() => _show = false);
-    Timer(const Duration(milliseconds: 250), () => _window?.close());
+    // 立即销毁窗口，force=true 确保完全移除
+    _window?.close(force: true);
   }
 
   @override
   Widget build(BuildContext context) {
+    print('[TaskPanel] build: _show=$_show, screenSize=${MediaQuery.of(context).size}');
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    
+    // 如果屏幕尺寸为0，说明还没有渲染好
+    if (screenWidth == 0 || screenHeight == 0) {
+      print('[TaskPanel] Screen size is 0, waiting...');
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+    
     final panelWidth = screenWidth * 0.85;
-    final panelHeight = 360.0;
-    
-    final bubbleCenterX = _bubbleX + 28;
-    final bubbleCenterY = _bubbleY + 28;
-    
+    final panelHeight = 400.0;
     final panelLeft = (screenWidth - panelWidth) / 2;
-    final panelTop = max(60.0, min(bubbleCenterY - panelHeight / 2, screenHeight - panelHeight - 60));
-    
-    final panelCenterX = panelLeft + panelWidth / 2;
-    final panelCenterY = panelTop + panelHeight / 2;
-    
-    final alignX = ((bubbleCenterX - panelCenterX) / (panelWidth / 2)).clamp(-1.0, 1.0);
-    final alignY = ((bubbleCenterY - panelCenterY) / (panelHeight / 2)).clamp(-1.0, 1.0);
+    final panelTop = (screenHeight - panelHeight) / 2;
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
-      home: GestureDetector(
-        onTap: _close,
-        child: Container(
-          color: Colors.black54,
-          child: Stack(
-            children: [
-              Positioned(
-                left: panelLeft,
-                top: panelTop,
-                width: panelWidth,
-                height: panelHeight,
-                child: GestureDetector(
-                  onTap: () {}, // 阻止点击穿透
-                  child: AnimatedScale(
-                    scale: _show ? 1.0 : 0.0,
-                    alignment: Alignment(alignX, alignY),
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOutCubic,
-                    child: Material(
-                      color: Colors.grey[900],
-                      borderRadius: BorderRadius.circular(16),
-                      clipBehavior: Clip.antiAlias,
-                      child: Column(
-                        children: [
-                          // 标题栏
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(color: Colors.grey[850]),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.play_circle, color: Colors.blue, size: 24),
-                                const SizedBox(width: 8),
-                                const Expanded(
-                                  child: Text('Flutter Automate', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                ),
-                                if (_tasks.isNotEmpty)
-                                  TextButton(
-                                    onPressed: () {
-                                      FlutterAutomate.instance.stopAll();
-                                      setState(() => _tasks.clear());
-                                    },
-                                    child: const Text('全部停止', style: TextStyle(color: Colors.red)),
-                                  ),
-                                IconButton(
-                                  onPressed: _close,
-                                  icon: const Icon(Icons.close, size: 20),
-                                ),
-                              ],
+      home: Container(
+        color: Colors.black54,  // 半透明背景遮罩
+        child: Stack(
+          children: [
+            // 面板
+            Positioned(
+              left: panelLeft,
+              top: panelTop,
+              width: panelWidth,
+              height: panelHeight,
+              child: AnimatedScale(
+                scale: _show ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                child: Material(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(16),
+                  clipBehavior: Clip.antiAlias,
+                  elevation: 8,
+                  shadowColor: Colors.black54,
+                  child: Column(
+                    children: [
+                      // 标题栏
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(color: Colors.grey[850]),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.play_circle, color: Colors.blue, size: 24),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text('Flutter Automate', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                             ),
-                          ),
-                          // Tab 栏
-                          TabBar(
-                            controller: _tabController,
-                            labelColor: Colors.blue,
-                            unselectedLabelColor: Colors.grey,
-                            indicatorColor: Colors.blue,
-                            tabs: [
-                              Tab(text: '任务 (${_tasks.length})'),
-                              Tab(text: '日志 (${_logs.length})'),
-                            ],
-                          ),
-                          // Tab 内容
-                          Expanded(
-                            child: TabBarView(
-                              controller: _tabController,
-                              children: [
-                                _buildTasksTab(),
-                                _buildLogsTab(),
-                              ],
+                            if (_tasks.isNotEmpty)
+                              TextButton(
+                                onPressed: () {
+                                  FlutterAutomate.instance.stopAll();
+                                  setState(() => _tasks.clear());
+                                },
+                                child: const Text('全部停止', style: TextStyle(color: Colors.red)),
+                              ),
+                            IconButton(
+                              onPressed: _close,
+                              icon: const Icon(Icons.close, size: 20),
                             ),
-                          ),
+                          ],
+                        ),
+                      ),
+                      // Tab 栏
+                      TabBar(
+                        controller: _tabController,
+                        labelColor: Colors.blue,
+                        unselectedLabelColor: Colors.grey,
+                        indicatorColor: Colors.blue,
+                        tabs: [
+                          Tab(text: '任务 (${_tasks.length})'),
+                          Tab(text: '日志 (${_logs.length})'),
                         ],
                       ),
-                    ),
+                      // Tab 内容
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildTasksTab(),
+                            _buildLogsTab(),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

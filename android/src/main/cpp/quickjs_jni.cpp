@@ -168,10 +168,31 @@ static bool call_host_bool(JSContext *ctx, const char *func, int argc, JSValueCo
 
 // ==================== Console ====================
 
+// 日志回调函数指针
+static jobject g_log_callback = nullptr;
+static jmethodID g_log_callback_method = nullptr;
+
+// 设置日志回调
+extern "C" JNIEXPORT void JNICALL
+Java_im_zoe_flutter_1automate_quickjs_QuickJSEngine_nativeSetLogCallback(
+    JNIEnv *env, jobject thiz, jobject callback) {
+    
+    if (g_log_callback != nullptr) {
+        env->DeleteGlobalRef(g_log_callback);
+        g_log_callback = nullptr;
+    }
+    
+    if (callback != nullptr) {
+        g_log_callback = env->NewGlobalRef(callback);
+        jclass cls = env->GetObjectClass(callback);
+        g_log_callback_method = env->GetMethodID(cls, "onLog", "(Ljava/lang/String;Ljava/lang/String;)V");
+    }
+}
+
 // 内部函数：收集所有参数为单个字符串
 static char* collect_args_to_string(JSContext *ctx, int argc, JSValueConst *argv) {
     size_t total_len = 0;
-    const char **strs = (const char**)malloc(sizeof(const char*) * argc);
+    const char **strs = (const char**)malloc(sizeof(char*) * argc);
     
     for (int i = 0; i < argc; i++) {
         strs[i] = JS_ToCString(ctx, argv[i]);
@@ -202,6 +223,18 @@ static JSValue js_console_output(JSContext *ctx, int argc, JSValueConst *argv, c
     
     // 2. 直接写入日志文件
     write_log(level, msg);
+    
+    // 3. 回调到 Kotlin/Flutter 层
+    if (g_log_callback != nullptr && g_log_callback_method != nullptr) {
+        JNIEnv *env;
+        if (g_jvm->GetEnv((void**)&env, JNI_VERSION_1_6) == JNI_OK) {
+            jstring jlevel = env->NewStringUTF(level);
+            jstring jmsg = env->NewStringUTF(msg);
+            env->CallVoidMethod(g_log_callback, g_log_callback_method, jlevel, jmsg);
+            env->DeleteLocalRef(jlevel);
+            env->DeleteLocalRef(jmsg);
+        }
+    }
     
     free(msg);
     return JS_UNDEFINED;

@@ -289,6 +289,50 @@ class LogManager {
     final result = await _channel.invokeMethod<bool>('clearLogs');
     return result ?? false;
   }
+  
+  /// 订阅实时日志
+  StreamSubscription<LogEntry>? _logSubscription;
+  final _logController = StreamController<LogEntry>.broadcast();
+  
+  /// 获取日志流
+  Stream<LogEntry> get stream => _logController.stream;
+  
+  /// 开始监听实时日志
+  Future<bool> subscribe() async {
+    if (_logSubscription != null) return true;
+    
+    // 设置 MethodChannel 回调
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'onScriptLog') {
+        final args = Map<String, dynamic>.from(call.arguments as Map);
+        final entry = LogEntry._(
+          level: args['level'] as String? ?? 'log',
+          message: args['message'] as String? ?? '',
+          timestamp: args['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch,
+          formattedTime: DateTime.fromMillisecondsSinceEpoch(
+            args['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch
+          ).toString().substring(11, 19),
+        );
+        _logController.add(entry);
+      }
+      return null;
+    });
+    
+    final result = await _channel.invokeMethod<bool>('subscribeLog');
+    return result ?? false;
+  }
+  
+  /// 停止监听实时日志
+  Future<bool> unsubscribe() async {
+    _channel.setMethodCallHandler(null);
+    final result = await _channel.invokeMethod<bool>('unsubscribeLog');
+    return result ?? false;
+  }
+  
+  /// 释放资源
+  void dispose() {
+    _logController.close();
+  }
 }
 
 class LogEntry {

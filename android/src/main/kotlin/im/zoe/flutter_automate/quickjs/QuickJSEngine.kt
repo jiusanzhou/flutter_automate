@@ -916,6 +916,34 @@ class QuickJSEngine(private val context: Context) {
     }
     
     /**
+     * 日志回调接口
+     */
+    interface LogCallback {
+        fun onLog(level: String, message: String)
+    }
+    
+    private var logCallback: LogCallback? = null
+    
+    /**
+     * 设置日志回调
+     */
+    fun setLogCallback(callback: LogCallback?) {
+        logCallback = callback
+        if (initialized) {
+            nativeSetLogCallback(callback?.let { LogCallbackWrapper(it) })
+        }
+    }
+    
+    /**
+     * 日志回调包装类 - JNI 调用
+     */
+    private inner class LogCallbackWrapper(private val callback: LogCallback) {
+        fun onLog(level: String, message: String) {
+            callback.onLog(level, message)
+        }
+    }
+    
+    /**
      * 执行 JavaScript 代码
      */
     fun eval(code: String, filename: String = "main.js"): String? {
@@ -960,6 +988,7 @@ class QuickJSEngine(private val context: Context) {
     
     private external fun nativeInit(callback: HostCallback)
     private external fun nativeSetLogDir(logDir: String)
+    private external fun nativeSetLogCallback(callback: Any?)
     private external fun nativeEval(code: String, filename: String): String
     private external fun nativeInterrupt()
     private external fun nativeDestroy()

@@ -32,6 +32,11 @@ class ScriptEngineManager private constructor(private val context: Context) {
     private var quickJSEngine: QuickJSEngine? = null
     private var quickJSAvailable = false
     
+    /**
+     * 获取 QuickJS 引擎实例
+     */
+    fun getQuickJSEngine(): QuickJSEngine? = quickJSEngine
+    
     // WASM 运行时 (回退方案)
     private val wasmRuntime: WasmRuntime = ChicoryWasmRuntime()
     
