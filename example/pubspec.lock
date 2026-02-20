@@ -73,7 +73,7 @@ packages:
     dependency: transitive
     description:
       path: "."
-      ref: HEAD
+      ref: "v0.3.0"
       resolved-ref: "2c1d64f23f771da7578ab03fa02aabeee8abf9ae"
       url: "https://github.com/jiusanzhou/flutter_floatwing.git"
     source: git
