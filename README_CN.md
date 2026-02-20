@@ -1,19 +1,19 @@
 # Flutter Automate
 
-A multi-language automation framework for Android. Supports JavaScript, Python, and other scripting languages via WASM runtime.
+一个多语言自动化框架，用于 Android 自动化操作。支持 JavaScript、Python 等多种脚本语言（通过 WASM 运行时）。
 
-[中文文档](./README_CN.md)
+[English](./README.md)
 
-## Features
+## 特性
 
-- 🚀 **Multi-language Support** - JavaScript, Python, Lua (via WASM)
-- 📱 **Complete Automation API** - UI selectors, gestures, app management, device control
-- 📸 **Screen Capture** - MediaProjection screenshot support (Android 10+ foreground service)
-- 🔧 **Pure Kotlin Implementation** - No NDK required, no AutoJS dependency
-- 🎯 **Chainable API** - Fluent API design
-- 🔒 **Secure** - Scripts run in WASM sandbox
+- 🚀 **多语言支持** - JavaScript、Python、Lua（通过 WASM）
+- 📱 **完整的自动化 API** - UI 选择器、手势、应用管理、设备控制
+- 📸 **屏幕截图** - MediaProjection 截图支持（Android 10+ 前台服务）
+- 🔧 **纯 Kotlin 实现** - 无需 NDK，无 AutoJS 依赖
+- 🎯 **链式调用** - 流畅的 API 设计
+- 🔒 **安全** - 脚本在 WASM 沙箱中运行
 
-## Installation
+## 安装
 
 ```yaml
 dependencies:
@@ -22,74 +22,74 @@ dependencies:
       url: https://github.com/jiusanzhou/flutter_automate.git
 ```
 
-## Quick Start
+## 快速开始
 
-### 1. Request Permissions
+### 1. 请求权限
 
 ```dart
 import 'package:flutter_automate/flutter_automate.dart';
 
 final automate = FlutterAutomate.instance;
 
-// Check and request accessibility service
+// 检查并请求无障碍服务
 final hasAccessibility = await automate.checkAccessibilityPermission();
 if (!hasAccessibility) {
   await automate.requestAccessibilityPermission(wait: true, timeout: 30000);
 }
 
-// Check and request screenshot permission
+// 检查并请求截屏权限
 final hasCapture = await automate.permissions.hasMediaProjection();
 if (!hasCapture) {
   await automate.permissions.requestMediaProjection();
 }
 
-// Other permissions
-await automate.permissions.requestStorage();           // Storage
-await automate.permissions.requestManageStorage();     // All files access (Android 11+)
-await automate.permissions.requestBatteryOptimizationExemption(); // Battery optimization
-await automate.permissions.requestNotificationListener(); // Notification listener
+// 其他权限
+await automate.permissions.requestStorage();           // 存储权限
+await automate.permissions.requestManageStorage();     // 所有文件访问 (Android 11+)
+await automate.permissions.requestBatteryOptimizationExemption(); // 电池优化白名单
+await automate.permissions.requestNotificationListener(); // 通知监听
 ```
 
-### 2. Screen Capture
+### 2. 屏幕截图
 
 ```dart
-// Requires screenshot permission first
-// Handle onActivityResult in MainActivity:
+// 需要先授权截屏权限
+// 在 MainActivity 中处理 onActivityResult:
 // ScreenCapture.onActivityResult(this, resultCode, data)
 
-// Capture screen
+// 截取屏幕
 final imageData = await automate.capture.capture();
 if (imageData != null) {
-  // imageData is Uint8List (PNG format)
+  // imageData 是 Uint8List (PNG 格式)
   Image.memory(imageData);
 }
 
-// Capture and save to file
+// 截图并保存到文件
 final success = await automate.capture.captureToFile(
   '/sdcard/Download/screenshot.png',
   quality: 90,
 );
 
-// Release resources
+// 释放资源
 await automate.capture.release();
 ```
 
-### 3. UI Automation
+### 3. UI 自动化
 
 ```dart
-// Find element
-final button = await automate.text("Login").findOne();
+// 查找元素
+final button = await automate.text("登录").findOne();
 
-// Click
-await automate.text("Login").click();
+// 点击
+await automate.text("登录").click();
 
-// Set text
+// 设置文本
 await automate.id("username").setText("hello@example.com");
 
-// Wait for element
-final element = await automate.textContains("Success").waitFor(timeout: 5000);
+// 等待元素出现
+final element = await automate.textContains("成功").waitFor(timeout: 5000);
 
-// Chainable selector
+// 链式选择器
 final result = await automate
     .selector()
     .className("Button")
@@ -97,24 +97,24 @@ final result = await automate
     .findAll();
 ```
 
-### 4. Gesture Operations
+### 4. 手势操作
 
 ```dart
-// Click at coordinates
+// 点击坐标
 await automate.click(500, 800);
 
-// Long press
+// 长按
 await automate.longClick(500, 800, duration: 1000);
 
-// Swipe
+// 滑动
 await automate.swipe(100, 500, 100, 1500, duration: 300);
 
-// Quick swipe
+// 快捷滑动
 await automate.swipeUp();
 await automate.swipeDown();
 ```
 
-### 5. Global Actions
+### 5. 全局操作
 
 ```dart
 await automate.back();
@@ -124,49 +124,49 @@ await automate.openNotifications();
 await automate.takeScreenshot();
 ```
 
-### 6. App Management
+### 6. 应用管理
 
 ```dart
-// Launch app
+// 启动应用
 await automate.app.launch("com.example.app");
-await automate.app.launchByName("WhatsApp");
+await automate.app.launchByName("微信");
 
-// Get current app
+// 获取当前应用
 final currentPkg = await automate.app.currentPackage();
 
-// Force stop
+// 强制停止
 await automate.app.forceStop("com.example.app");
 
-// Get installed apps
+// 获取已安装应用
 final apps = await automate.app.getInstalled();
 ```
 
-### 7. Device Info
+### 7. 设备信息
 
 ```dart
-// Device info
+// 设备信息
 final info = await automate.device.info();
-print("Model: ${info.model}");
-print("Screen: ${info.screenWidth}x${info.screenHeight}");
+print("型号: ${info.model}");
+print("屏幕: ${info.screenWidth}x${info.screenHeight}");
 
-// Clipboard
+// 剪贴板
 final text = await automate.device.getClipboard();
 await automate.device.setClipboard("Hello");
 
-// Vibrate
+// 震动
 await automate.device.vibrate(duration: 100);
 
-// Battery
+// 电量
 final battery = await automate.device.getBattery();
 ```
 
-### 8. Execute Scripts
+### 8. 执行脚本
 
 ```dart
 // JavaScript
 final execution = await automate.execute('''
   console.log("Hello from JS!");
-  click(text("Login"));
+  click(text("登录"));
   sleep(1000);
   swipeUp();
 ''', language: 'js');
@@ -174,15 +174,15 @@ final execution = await automate.execute('''
 // Python (coming soon)
 await automate.execute('''
 import automate
-automate.click(text("Login"))
+automate.click(text("登录"))
 ''', language: 'python');
 ```
 
-## Android Configuration
+## Android 配置
 
 ### MainActivity
 
-Screenshot feature requires handling permission callback in MainActivity:
+截屏功能需要在 MainActivity 中处理权限回调：
 
 ```kotlin
 // MainActivity.kt
@@ -207,35 +207,35 @@ class MainActivity : FlutterActivity() {
 ### AndroidManifest.xml
 
 ```xml
-<!-- Basic permissions -->
+<!-- 基础权限 -->
 <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
 
-<!-- Storage permissions -->
+<!-- 存储权限 -->
 <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
-<!-- Other -->
+<!-- 其他 -->
 <uses-permission android:name="android.permission.VIBRATE" />
 <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 ```
 
-## Permissions Reference
+## 权限说明
 
-| Permission | Purpose | API |
-|------------|---------|-----|
-| Accessibility Service | UI control, gesture execution | `permissions.requestAccessibility()` |
-| Overlay | Display floating control panel | `FloatwingPlugin` |
-| Screen Capture | MediaProjection screenshot | `permissions.requestMediaProjection()` |
-| Storage | Read/write files | `permissions.requestStorage()` |
-| All Files Access | Android 11+ access all files | `permissions.requestManageStorage()` |
-| Battery Optimization | Background keep-alive | `permissions.requestBatteryOptimizationExemption()` |
-| Notification Listener | Read system notifications | `permissions.requestNotificationListener()` |
+| 权限 | 用途 | API |
+|------|------|-----|
+| 无障碍服务 | UI 控制、手势执行 | `permissions.requestAccessibility()` |
+| 悬浮窗 | 显示悬浮控制面板 | `FloatwingPlugin` |
+| 截屏 | MediaProjection 截图 | `permissions.requestMediaProjection()` |
+| 存储 | 读写文件 | `permissions.requestStorage()` |
+| 所有文件访问 | Android 11+ 访问所有文件 | `permissions.requestManageStorage()` |
+| 电池优化白名单 | 后台保活 | `permissions.requestBatteryOptimizationExemption()` |
+| 通知监听 | 读取系统通知 | `permissions.requestNotificationListener()` |
 
-## Architecture
+## 架构
 
 ```
 flutter_automate/
@@ -243,7 +243,7 @@ flutter_automate/
 │   └── flutter_automate.dart    # Flutter/Dart API
 ├── android/
 │   └── src/main/kotlin/
-│       ├── core/                 # Core automation modules
+│       ├── core/                 # 核心自动化模块
 │       │   ├── AutomateAccessibilityService.kt
 │       │   ├── UiSelector.kt
 │       │   ├── UiObject.kt
@@ -252,17 +252,17 @@ flutter_automate/
 │       │   ├── ScreenCaptureService.kt
 │       │   ├── AppUtils.kt
 │       │   └── DeviceUtils.kt
-│       ├── wasm/                 # WASM runtime
+│       ├── wasm/                 # WASM 运行时
 │       │   ├── ScriptEngineManager.kt
 │       │   └── QuickJSEngine.kt
 │       └── FlutterAutomatePlugin.kt
-└── example/                      # Example app
+└── example/                      # 示例应用
 ```
 
-## License
+## 许可证
 
 MIT License
 
-## Contributing
+## 贡献
 
-Issues and Pull Requests are welcome!
+欢迎提交 Issue 和 Pull Request！
