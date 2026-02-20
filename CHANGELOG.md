@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-02-20
+
+### Added
+- 🔐 **Permission Manager** - Unified permission management system
+  - `PermissionManager` class with comprehensive permission APIs
+  - `PermissionType` enum and `PermissionStatus` class
+  - Support for: accessibility, overlay, notification, mediaProjection, storage, manageStorage, batteryOptimization
+  - `checkAll()` - Get all permission statuses at once
+  - `hasAllRequired()` - Check if core permissions are granted
+  - `openAppSettings()` - Open app settings page
+- 📹 **Screen Capture Service** - Android 10+ compatible
+  - `ScreenCaptureService` - Foreground service with `FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION`
+  - Auto-start/stop foreground service when requesting/releasing screen capture
+  - Proper notification channel and ongoing notification
+
+### Changed
+- `ScreenCapture` now automatically handles foreground service lifecycle on Android 10+
+- Added more permissions to AndroidManifest:
+  - `FOREGROUND_SERVICE_SPECIAL_USE`
+  - `WAKE_LOCK`
+  - `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`
+
+### Fixed
+- 🐛 Fixed crash when requesting screen capture permission on Android 10+
+  - Error: `SecurityException: Media projections require a foreground service of type ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION`
+
 ## [1.0.0] - 2026-02-16
 
 ### Added

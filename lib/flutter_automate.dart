@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/services.dart';
 
 // 导出依赖的插件，方便用户直接使用
@@ -28,6 +27,11 @@ class FlutterAutomate {
     final result = await _channel.invokeMethod<bool>('init');
     return result ?? false;
   }
+
+  // ==================== 权限管理 ====================
+
+  /// 权限管理器
+  PermissionManager get permissions => PermissionManager._(_channel);
 
   // ==================== 无障碍服务 ====================
 
@@ -247,6 +251,184 @@ class FlutterAutomate {
   
   /// 日志管理
   LogManager get logs => LogManager._(_channel);
+}
+
+// ==================== 权限管理 ====================
+
+/// 权限类型
+enum PermissionType {
+  /// 无障碍服务权限
+  accessibility,
+  /// 悬浮窗权限
+  overlay,
+  /// 通知监听权限
+  notification,
+  /// 截屏权限
+  mediaProjection,
+  /// 存储权限
+  storage,
+  /// 所有文件访问权限 (Android 11+)
+  manageStorage,
+  /// 电池优化白名单
+  batteryOptimization,
+}
+
+/// 权限状态
+class PermissionStatus {
+  final PermissionType type;
+  final bool granted;
+  final String name;
+  final String description;
+
+  const PermissionStatus({
+    required this.type,
+    required this.granted,
+    required this.name,
+    required this.description,
+  });
+
+  factory PermissionStatus.fromMap(Map<String, dynamic> map) {
+    return PermissionStatus(
+      type: PermissionType.values.firstWhere(
+        (e) => e.name == map['type'],
+        orElse: () => PermissionType.accessibility,
+      ),
+      granted: map['granted'] as bool? ?? false,
+      name: map['name'] as String? ?? '',
+      description: map['description'] as String? ?? '',
+    );
+  }
+}
+
+/// 权限管理器
+class PermissionManager {
+  final MethodChannel _channel;
+
+  PermissionManager._(this._channel);
+
+  // ==================== 综合权限检查 ====================
+
+  /// 检查所有权限状态
+  Future<List<PermissionStatus>> checkAll() async {
+    final result = await _channel.invokeMethod<List>('permissionCheckAll');
+    if (result == null) return [];
+    return result
+        .map((e) => PermissionStatus.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  /// 检查所有必需权限是否已授予
+  Future<bool> hasAllRequired() async {
+    final result = await _channel.invokeMethod<bool>('permissionHasAllRequired');
+    return result ?? false;
+  }
+
+  /// 打开应用设置页
+  Future<bool> openAppSettings() async {
+    final result = await _channel.invokeMethod<bool>('permissionOpenAppSettings');
+    return result ?? false;
+  }
+
+  // ==================== 无障碍服务 ====================
+
+  /// 检查无障碍服务权限
+  Future<bool> hasAccessibility() async {
+    final result = await _channel.invokeMethod<bool>('checkAccessibilityPermission');
+    return result ?? false;
+  }
+
+  /// 请求无障碍服务权限
+  /// [wait] 是否等待用户授权返回
+  /// [timeout] 等待超时时间（毫秒），-1 为无限等待
+  Future<bool> requestAccessibility({bool wait = false, int timeout = -1}) async {
+    final result = await _channel.invokeMethod<bool>(
+      'requestAccessibilityPermission',
+      {'wait': wait, 'timeout': timeout},
+    );
+    return result ?? false;
+  }
+
+  // ==================== 悬浮窗权限 ====================
+
+  /// 检查悬浮窗权限
+  Future<bool> hasOverlay() async {
+    final result = await _channel.invokeMethod<bool>('permissionHasOverlay');
+    return result ?? false;
+  }
+
+  /// 请求悬浮窗权限
+  Future<bool> requestOverlay() async {
+    final result = await _channel.invokeMethod<bool>('permissionRequestOverlay');
+    return result ?? false;
+  }
+
+  // ==================== 通知监听权限 ====================
+
+  /// 检查通知监听权限
+  Future<bool> hasNotificationListener() async {
+    final result = await _channel.invokeMethod<bool>('permissionHasNotificationListener');
+    return result ?? false;
+  }
+
+  /// 请求通知监听权限
+  Future<bool> requestNotificationListener() async {
+    final result = await _channel.invokeMethod<bool>('permissionRequestNotificationListener');
+    return result ?? false;
+  }
+
+  // ==================== 截屏权限 ====================
+
+  /// 检查截屏权限
+  Future<bool> hasMediaProjection() async {
+    final result = await _channel.invokeMethod<bool>('captureHasPermission');
+    return result ?? false;
+  }
+
+  /// 请求截屏权限
+  Future<bool> requestMediaProjection() async {
+    final result = await _channel.invokeMethod<bool>('captureRequestPermission');
+    return result ?? false;
+  }
+
+  // ==================== 存储权限 ====================
+
+  /// 检查存储权限
+  Future<bool> hasStorage() async {
+    final result = await _channel.invokeMethod<bool>('permissionHasStorage');
+    return result ?? false;
+  }
+
+  /// 请求存储权限
+  Future<bool> requestStorage() async {
+    final result = await _channel.invokeMethod<bool>('permissionRequestStorage');
+    return result ?? false;
+  }
+
+  /// 检查所有文件访问权限 (Android 11+)
+  Future<bool> hasManageStorage() async {
+    final result = await _channel.invokeMethod<bool>('permissionHasManageStorage');
+    return result ?? false;
+  }
+
+  /// 请求所有文件访问权限 (Android 11+)
+  Future<bool> requestManageStorage() async {
+    final result = await _channel.invokeMethod<bool>('permissionRequestManageStorage');
+    return result ?? false;
+  }
+
+  // ==================== 电池优化 ====================
+
+  /// 检查是否在电池优化白名单中
+  Future<bool> hasBatteryOptimizationExemption() async {
+    final result = await _channel.invokeMethod<bool>('permissionHasBatteryOptimization');
+    return result ?? false;
+  }
+
+  /// 请求加入电池优化白名单
+  Future<bool> requestBatteryOptimizationExemption() async {
+    final result = await _channel.invokeMethod<bool>('permissionRequestBatteryOptimization');
+    return result ?? false;
+  }
 }
 
 // ==================== 日志管理 ====================

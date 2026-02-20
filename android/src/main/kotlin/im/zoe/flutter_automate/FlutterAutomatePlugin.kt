@@ -3,6 +3,7 @@ package im.zoe.flutter_automate
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.provider.Settings
 import androidx.annotation.NonNull
 import im.zoe.flutter_automate.core.*
@@ -143,6 +144,28 @@ class FlutterAutomatePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             "clearLogs" -> handleClearLogs(result)
             "subscribeLog" -> handleSubscribeLog(call, result)
             "unsubscribeLog" -> handleUnsubscribeLog(result)
+            
+            // ==================== 截图 ====================
+            "captureHasPermission" -> handleCaptureHasPermission(result)
+            "captureRequestPermission" -> handleCaptureRequestPermission(result)
+            "captureScreen" -> handleCaptureScreen(result)
+            "captureToFile" -> handleCaptureToFile(call, result)
+            "captureRelease" -> handleCaptureRelease(result)
+            
+            // ==================== 权限管理 ====================
+            "permissionCheckAll" -> handlePermissionCheckAll(result)
+            "permissionHasAllRequired" -> handlePermissionHasAllRequired(result)
+            "permissionOpenAppSettings" -> handlePermissionOpenAppSettings(result)
+            "permissionHasOverlay" -> handlePermissionHasOverlay(result)
+            "permissionRequestOverlay" -> handlePermissionRequestOverlay(result)
+            "permissionHasNotificationListener" -> handlePermissionHasNotificationListener(result)
+            "permissionRequestNotificationListener" -> handlePermissionRequestNotificationListener(result)
+            "permissionHasStorage" -> handlePermissionHasStorage(result)
+            "permissionRequestStorage" -> handlePermissionRequestStorage(result)
+            "permissionHasManageStorage" -> handlePermissionHasManageStorage(result)
+            "permissionRequestManageStorage" -> handlePermissionRequestManageStorage(result)
+            "permissionHasBatteryOptimization" -> handlePermissionHasBatteryOptimization(result)
+            "permissionRequestBatteryOptimization" -> handlePermissionRequestBatteryOptimization(result)
             
             else -> result.notImplemented()
         }
@@ -748,5 +771,287 @@ class FlutterAutomatePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     private fun handleClearLogs(result: Result) {
         ScriptLogManager.clearMemoryLogs()
         result.success(true)
+    }
+    
+    // ==================== 截图处理 ====================
+    
+    private fun handleCaptureHasPermission(result: Result) {
+        result.success(ScreenCapture.isAvailable())
+    }
+    
+    private fun handleCaptureRequestPermission(result: Result) {
+        val currentActivity = activity
+        if (currentActivity == null) {
+            result.error("NO_ACTIVITY", "Activity is not available", null)
+            return
+        }
+        
+        ScreenCapture.init(currentActivity)
+        ScreenCapture.requestPermission(currentActivity) { granted ->
+            result.success(granted)
+        }
+    }
+    
+    private fun handleCaptureScreen(result: Result) {
+        scope.launch(Dispatchers.IO) {
+            val bitmap = ScreenCapture.capture()
+            if (bitmap != null) {
+                val stream = java.io.ByteArrayOutputStream()
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream)
+                bitmap.recycle()
+                val bytes = stream.toByteArray()
+                withContext(Dispatchers.Main) {
+                    result.success(bytes)
+                }
+            } else {
+                withContext(Dispatchers.Main) {
+                    result.success(null)
+                }
+            }
+        }
+    }
+    
+    private fun handleCaptureToFile(call: MethodCall, result: Result) {
+        val path = call.argument<String>("path") ?: run {
+            result.error("INVALID_ARGUMENT", "path is required", null)
+            return
+        }
+        val quality = call.argument<Int>("quality") ?: 90
+        
+        scope.launch(Dispatchers.IO) {
+            val success = ScreenCapture.captureToFile(path, quality)
+            withContext(Dispatchers.Main) {
+                result.success(success)
+            }
+        }
+    }
+    
+    private fun handleCaptureRelease(result: Result) {
+        ScreenCapture.release()
+        result.success(true)
+    }
+    
+    // ==================== 权限管理处理 ====================
+    
+    private fun handlePermissionCheckAll(result: Result) {
+        val permissions = mutableListOf<Map<String, Any?>>()
+        
+        // 无障碍服务
+        permissions.add(mapOf(
+            "type" to "accessibility",
+            "granted" to AccessibilityServiceHelper.isEnabled(context),
+            "name" to "无障碍服务",
+            "description" to "用于读取和操作界面元素"
+        ))
+        
+        // 悬浮窗权限
+        permissions.add(mapOf(
+            "type" to "overlay",
+            "granted" to Settings.canDrawOverlays(context),
+            "name" to "悬浮窗权限",
+            "description" to "用于显示悬浮窗和控制面板"
+        ))
+        
+        // 通知监听权限
+        val notificationEnabled = Settings.Secure.getString(
+            context.contentResolver,
+            "enabled_notification_listeners"
+        )?.contains(context.packageName) == true
+        permissions.add(mapOf(
+            "type" to "notification",
+            "granted" to notificationEnabled,
+            "name" to "通知监听权限",
+            "description" to "用于监听和处理通知"
+        ))
+        
+        // 截屏权限
+        permissions.add(mapOf(
+            "type" to "mediaProjection",
+            "granted" to ScreenCapture.isAvailable(),
+            "name" to "截屏权限",
+            "description" to "用于截取屏幕内容"
+        ))
+        
+        // 存储权限
+        val storageGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            android.os.Environment.isExternalStorageManager()
+        } else {
+            context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == 
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+        permissions.add(mapOf(
+            "type" to "storage",
+            "granted" to storageGranted,
+            "name" to "存储权限",
+            "description" to "用于读写文件"
+        ))
+        
+        // 所有文件访问权限 (Android 11+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            permissions.add(mapOf(
+                "type" to "manageStorage",
+                "granted" to android.os.Environment.isExternalStorageManager(),
+                "name" to "所有文件访问",
+                "description" to "用于访问所有文件（Android 11+）"
+            ))
+        }
+        
+        // 电池优化白名单
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        permissions.add(mapOf(
+            "type" to "batteryOptimization",
+            "granted" to powerManager.isIgnoringBatteryOptimizations(context.packageName),
+            "name" to "电池优化白名单",
+            "description" to "用于保持后台运行"
+        ))
+        
+        result.success(permissions)
+    }
+    
+    private fun handlePermissionHasAllRequired(result: Result) {
+        val accessibilityEnabled = AccessibilityServiceHelper.isEnabled(context)
+        val overlayEnabled = Settings.canDrawOverlays(context)
+        result.success(accessibilityEnabled && overlayEnabled)
+    }
+    
+    private fun handlePermissionOpenAppSettings(result: Result) {
+        try {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = android.net.Uri.fromParts("package", context.packageName, null)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            result.success(true)
+        } catch (e: Exception) {
+            result.success(false)
+        }
+    }
+    
+    private fun handlePermissionHasOverlay(result: Result) {
+        result.success(Settings.canDrawOverlays(context))
+    }
+    
+    private fun handlePermissionRequestOverlay(result: Result) {
+        try {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                android.net.Uri.parse("package:${context.packageName}")
+            ).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            result.success(true)
+        } catch (e: Exception) {
+            result.success(false)
+        }
+    }
+    
+    private fun handlePermissionHasNotificationListener(result: Result) {
+        val enabled = Settings.Secure.getString(
+            context.contentResolver,
+            "enabled_notification_listeners"
+        )?.contains(context.packageName) == true
+        result.success(enabled)
+    }
+    
+    private fun handlePermissionRequestNotificationListener(result: Result) {
+        try {
+            val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            result.success(true)
+        } catch (e: Exception) {
+            result.success(false)
+        }
+    }
+    
+    private fun handlePermissionHasStorage(result: Result) {
+        val granted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            android.os.Environment.isExternalStorageManager()
+        } else {
+            context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == 
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+        result.success(granted)
+    }
+    
+    private fun handlePermissionRequestStorage(result: Result) {
+        val currentActivity = activity
+        if (currentActivity == null) {
+            result.error("NO_ACTIVITY", "Activity is not available", null)
+            return
+        }
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11+ 需要跳转到设置页
+            try {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                    data = android.net.Uri.parse("package:${context.packageName}")
+                }
+                currentActivity.startActivity(intent)
+                result.success(true)
+            } catch (e: Exception) {
+                result.success(false)
+            }
+        } else {
+            // Android 10 及以下使用运行时权限
+            androidx.core.app.ActivityCompat.requestPermissions(
+                currentActivity,
+                arrayOf(
+                    android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ),
+                1002
+            )
+            result.success(true)
+        }
+    }
+    
+    private fun handlePermissionHasManageStorage(result: Result) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            result.success(android.os.Environment.isExternalStorageManager())
+        } else {
+            // Android 10 及以下没有这个概念，返回普通存储权限状态
+            result.success(
+                context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == 
+                    android.content.pm.PackageManager.PERMISSION_GRANTED
+            )
+        }
+    }
+    
+    private fun handlePermissionRequestManageStorage(result: Result) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                    data = android.net.Uri.parse("package:${context.packageName}")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+                result.success(true)
+            } catch (e: Exception) {
+                result.success(false)
+            }
+        } else {
+            handlePermissionRequestStorage(result)
+        }
+    }
+    
+    private fun handlePermissionHasBatteryOptimization(result: Result) {
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        result.success(powerManager.isIgnoringBatteryOptimizations(context.packageName))
+    }
+    
+    private fun handlePermissionRequestBatteryOptimization(result: Result) {
+        try {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = android.net.Uri.parse("package:${context.packageName}")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            result.success(true)
+        } catch (e: Exception) {
+            result.success(false)
+        }
     }
 }

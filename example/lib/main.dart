@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_automate/flutter_automate.dart';
@@ -46,13 +46,22 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   final automate = FlutterAutomate.instance;
   final _scriptController = TextEditingController();
   final _floatwing = FloatwingPlugin();
   
+  late TabController _tabController;
+  
+  // 权限状态
   bool _accessibilityEnabled = false;
   bool _floatPermission = false;
+  bool _capturePermission = false;
+  bool _storagePermission = false;
+  bool _manageStoragePermission = false;
+  bool _batteryOptimization = false;
+  bool _notificationListener = false;
+  
   String _log = '';
   
   ScriptExecution? _currentTask;
@@ -63,6 +72,9 @@ class _HomePageState extends State<HomePage> {
   
   // 日志订阅
   StreamSubscription<LogEntry>? _logSubscription;
+  
+  // 截图预览
+  Uint8List? _screenshotData;
 
   final String _defaultScript = '''// Auto.js API 兼容性测试
 console.log("=== Flutter Automate API Test ===");
@@ -93,9 +105,6 @@ if (btn) {
   console.log("  text: " + btn.text());
   console.log("  className: " + btn.className());
   console.log("  bounds: " + btn.left() + "," + btn.top() + "," + btn.right() + "," + btn.bottom());
-  console.log("  center: " + btn.centerX() + "," + btn.centerY());
-  console.log("  clickable: " + btn.clickable());
-  console.log("  enabled: " + btn.enabled());
 }
 
 // 扩展选择器
@@ -104,68 +113,7 @@ if (editor) {
   console.log("\\n找到输入框:");
   console.log("  editable: " + editor.editable());
   console.log("  childCount: " + editor.childCount());
-  console.log("  depth: " + editor.depth());
-  console.log("  indexInParent: " + editor.indexInParent());
 }
-
-// 包含选择器
-var contains = textContains("日志").findOne();
-if (contains) {
-  console.log("\\n找到包含 [日志] 的控件: " + contains.text());
-}
-
-// 多条件选择器
-var multi = className("Button").clickable(true).findAll();
-console.log("\\n可点击按钮数量: " + multi.length);
-
-// ==================== UiObject 导航 ====================
-console.log("\\n--- 节点导航测试 ---");
-
-var root = className("View").findOnce(0);
-if (root) {
-  console.log("根节点 children 数量: " + root.childCount());
-  
-  var firstChild = root.children()[0];
-  if (firstChild) {
-    console.log("第一个子节点: " + firstChild.className());
-    
-    var parent = firstChild.parent();
-    if (parent) {
-      console.log("父节点: " + parent.className());
-    }
-  }
-}
-
-// ==================== 布尔属性选择器 ====================
-console.log("\\n--- 布尔属性选择器测试 ---");
-
-var scrollables = scrollable(true).findAll();
-console.log("可滚动控件数量: " + scrollables.length);
-
-var editables = editable(true).findAll();
-console.log("可编辑控件数量: " + editables.length);
-
-var focusables = focusable(true).findAll();
-console.log("可聚焦控件数量: " + focusables.length);
-
-// ==================== 手势 API ====================
-console.log("\\n--- 手势 API 测试 ---");
-// gesture(300, [100, 100], [200, 200]); // 注释掉避免误触
-console.log("gesture API 已就绪 (跳过实际执行)");
-
-// ==================== Storage API ====================
-console.log("\\n--- Storage API 测试 ---");
-var storage = storages.create("test");
-storage.put("key1", "value1");
-storage.put("key2", 123);
-storage.put("key3", {name: "test", count: 5});
-
-console.log("storage.get key1: " + storage.get("key1"));
-console.log("storage.get key2: " + storage.get("key2"));
-console.log("storage.contains key1: " + storage.contains("key1"));
-
-storage.remove("key1");
-console.log("storage.contains key1 (after remove): " + storage.contains("key1"));
 
 // ==================== 完成 ====================
 console.log("\\n=== 测试完成 ===");
@@ -176,12 +124,13 @@ toast("API 测试完成!");
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _scriptController.text = _defaultScript;
     _init();
   }
   
   Future<void> _init() async {
-    await _checkPermissions();
+    await _checkAllPermissions();
     await _subscribeLog();
     Future.delayed(const Duration(milliseconds: 500), () {
       _initFloatwing();
@@ -197,18 +146,30 @@ toast("API 测试完成!");
   
   @override
   void dispose() {
+    _tabController.dispose();
     _logSubscription?.cancel();
     automate.logs.unsubscribe();
     _scriptController.dispose();
     super.dispose();
   }
 
-  Future<void> _checkPermissions() async {
+  Future<void> _checkAllPermissions() async {
     final accEnabled = await automate.isAccessibilityEnabled();
     final floatPerm = await _floatwing.checkPermission();
+    final capturePerm = await automate.permissions.hasMediaProjection();
+    final storagePerm = await automate.permissions.hasStorage();
+    final manageStoragePerm = await automate.permissions.hasManageStorage();
+    final batteryPerm = await automate.permissions.hasBatteryOptimizationExemption();
+    final notifPerm = await automate.permissions.hasNotificationListener();
+    
     setState(() {
       _accessibilityEnabled = accEnabled;
       _floatPermission = floatPerm;
+      _capturePermission = capturePerm;
+      _storagePermission = storagePerm;
+      _manageStoragePermission = manageStoragePerm;
+      _batteryOptimization = batteryPerm;
+      _notificationListener = notifPerm;
     });
   }
   
@@ -223,13 +184,43 @@ toast("API 测试完成!");
 
   Future<void> _requestAccessibility() async {
     await automate.requestAccessibilityPermission(wait: true, timeout: 30000);
-    await _checkPermissions();
+    await _checkAllPermissions();
   }
   
   Future<void> _requestFloatPermission() async {
     await _floatwing.openPermissionSetting();
     await Future.delayed(const Duration(seconds: 2));
-    await _checkPermissions();
+    await _checkAllPermissions();
+  }
+  
+  Future<void> _requestCapturePermission() async {
+    final result = await automate.permissions.requestMediaProjection();
+    _addLog('截屏权限: ${result ? "已授权" : "未授权"}');
+    await _checkAllPermissions();
+  }
+  
+  Future<void> _requestStoragePermission() async {
+    final result = await automate.permissions.requestStorage();
+    _addLog('存储权限: ${result ? "已授权" : "未授权"}');
+    await _checkAllPermissions();
+  }
+  
+  Future<void> _requestManageStoragePermission() async {
+    final result = await automate.permissions.requestManageStorage();
+    _addLog('所有文件访问: ${result ? "已授权" : "未授权"}');
+    await _checkAllPermissions();
+  }
+  
+  Future<void> _requestBatteryOptimization() async {
+    final result = await automate.permissions.requestBatteryOptimizationExemption();
+    _addLog('电池优化白名单: ${result ? "已加入" : "未加入"}');
+    await _checkAllPermissions();
+  }
+  
+  Future<void> _requestNotificationListener() async {
+    final result = await automate.permissions.requestNotificationListener();
+    _addLog('通知监听: ${result ? "已授权" : "未授权"}');
+    await _checkAllPermissions();
   }
 
   void _addLog(String message) {
@@ -242,22 +233,18 @@ toast("API 测试完成!");
   }
 
   Future<void> _runScript() async {
-    print('=== _runScript called ===');
     final script = _scriptController.text.trim();
     if (script.isEmpty) {
       _addLog('错误: 脚本为空');
-      print('Script is empty');
       return;
     }
     
-    print('Script length: ${script.length}');
     setState(() {
       _isRunning = true;
       _taskStatus = '运行中...';
     });
     _addLog('开始执行脚本...');
     
-    // 通知悬浮窗
     _bubbleWindow?.share({'status': '运行中', 'taskId': 1, 'name': 'main.js'});
     
     try {
@@ -299,6 +286,26 @@ toast("API 测试完成!");
     }
   }
   
+  Future<void> _takeScreenshot() async {
+    if (!_capturePermission) {
+      _addLog('需要先授权截屏权限');
+      return;
+    }
+    
+    _addLog('正在截屏...');
+    try {
+      final data = await automate.capture.capture();
+      if (data != null) {
+        setState(() => _screenshotData = data);
+        _addLog('截屏成功: ${data.length} bytes');
+      } else {
+        _addLog('截屏失败');
+      }
+    } catch (e) {
+      _addLog('截屏错误: $e');
+    }
+  }
+  
   Future<void> _showBubble() async {
     if (!_floatPermission) {
       _addLog('无悬浮窗权限');
@@ -318,7 +325,7 @@ toast("API 测试完成!");
       
       final config = WindowConfig(
         id: 'automate_bubble',
-        width: 168,  // 56 * 3 (pixelRatio)
+        width: 168,
         height: 168,
         x: 0,
         y: 400,
@@ -341,6 +348,14 @@ toast("API 测试完成!");
       appBar: AppBar(
         title: const Text('Flutter Automate'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.lock_open), text: '权限'),
+            Tab(icon: Icon(Icons.code), text: '脚本'),
+            Tab(icon: Icon(Icons.screenshot), text: '截屏'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: Icon(_floatPermission 
@@ -351,151 +366,370 @@ toast("API 测试完成!");
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 权限状态
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  children: [
-                    _PermissionRow(
-                      icon: Icons.accessibility,
-                      title: '无障碍服务',
-                      enabled: _accessibilityEnabled,
-                      onRequest: _requestAccessibility,
-                    ),
-                    const SizedBox(height: 8),
-                    _PermissionRow(
-                      icon: Icons.picture_in_picture,
-                      title: '悬浮窗权限',
-                      enabled: _floatPermission,
-                      onRequest: _requestFloatPermission,
-                    ),
-                  ],
-                ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildPermissionsTab(),
+          _buildScriptTab(),
+          _buildCaptureTab(),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildPermissionsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('权限状态', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 12),
+                  _PermissionRow(
+                    icon: Icons.accessibility,
+                    title: '无障碍服务',
+                    subtitle: '控制 UI、执行手势',
+                    enabled: _accessibilityEnabled,
+                    onRequest: _requestAccessibility,
+                  ),
+                  const Divider(),
+                  _PermissionRow(
+                    icon: Icons.picture_in_picture,
+                    title: '悬浮窗权限',
+                    subtitle: '显示悬浮控制面板',
+                    enabled: _floatPermission,
+                    onRequest: _requestFloatPermission,
+                  ),
+                  const Divider(),
+                  _PermissionRow(
+                    icon: Icons.screenshot,
+                    title: '截屏权限',
+                    subtitle: 'MediaProjection 屏幕截图',
+                    enabled: _capturePermission,
+                    onRequest: _requestCapturePermission,
+                  ),
+                  const Divider(),
+                  _PermissionRow(
+                    icon: Icons.folder,
+                    title: '存储权限',
+                    subtitle: '读写外部存储',
+                    enabled: _storagePermission,
+                    onRequest: _requestStoragePermission,
+                  ),
+                  const Divider(),
+                  _PermissionRow(
+                    icon: Icons.folder_special,
+                    title: '所有文件访问',
+                    subtitle: 'Android 11+ MANAGE_EXTERNAL_STORAGE',
+                    enabled: _manageStoragePermission,
+                    onRequest: _requestManageStoragePermission,
+                  ),
+                  const Divider(),
+                  _PermissionRow(
+                    icon: Icons.battery_saver,
+                    title: '电池优化白名单',
+                    subtitle: '后台保活',
+                    enabled: _batteryOptimization,
+                    onRequest: _requestBatteryOptimization,
+                  ),
+                  const Divider(),
+                  _PermissionRow(
+                    icon: Icons.notifications,
+                    title: '通知监听',
+                    subtitle: '读取系统通知',
+                    enabled: _notificationListener,
+                    onRequest: _requestNotificationListener,
+                  ),
+                ],
               ),
             ),
-            
-            const SizedBox(height: 16),
-            
-            // 任务状态
-            Card(
-              color: _isRunning ? Colors.blue.shade50 : null,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    if (_isRunning)
-                      const SizedBox(
-                        width: 20, height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    else
-                      Icon(
-                        _taskStatus.contains('错误') ? Icons.error : 
-                        _taskStatus == '完成' ? Icons.check_circle : Icons.circle_outlined,
-                        color: _taskStatus.contains('错误') ? Colors.red : Colors.green,
-                        size: 20,
-                      ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(_taskStatus, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _checkAllPermissions,
+            icon: const Icon(Icons.refresh),
+            label: const Text('刷新权限状态'),
+          ),
+          const SizedBox(height: 16),
+          // 日志
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text('日志', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const Spacer(),
+                      TextButton(onPressed: () => setState(() => _log = ''), child: const Text('清空')),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 150,
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    if (_isRunning)
-                      IconButton(onPressed: _stopScript, icon: const Icon(Icons.stop, color: Colors.red)),
-                  ],
-                ),
+                    child: SingleChildScrollView(
+                      child: Text(_log, style: const TextStyle(fontFamily: 'monospace', fontSize: 11)),
+                    ),
+                  ),
+                ],
               ),
             ),
-            
-            const SizedBox(height: 16),
-            
-            // 脚本编辑器
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('脚本编辑器', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _scriptController,
-                      maxLines: 12,
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.all(12),
-                      ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildScriptTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 任务状态
+          Card(
+            color: _isRunning ? Colors.blue.shade50 : null,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  if (_isRunning)
+                    const SizedBox(
+                      width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    Icon(
+                      _taskStatus.contains('错误') ? Icons.error : 
+                      _taskStatus == '完成' ? Icons.check_circle : Icons.circle_outlined,
+                      color: _taskStatus.contains('错误') ? Colors.red : Colors.green,
+                      size: 20,
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: _isRunning ? null : _runScript,
-                            icon: const Icon(Icons.play_arrow),
-                            label: const Text('运行'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                            ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(_taskStatus, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  if (_isRunning)
+                    IconButton(onPressed: _stopScript, icon: const Icon(Icons.stop, color: Colors.red)),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // 脚本编辑器
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('脚本编辑器', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _scriptController,
+                    maxLines: 15,
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.all(12),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _isRunning ? null : _runScript,
+                          icon: const Icon(Icons.play_arrow),
+                          label: const Text('运行'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _scriptController.clear(),
-                            icon: const Icon(Icons.clear),
-                            label: const Text('清空'),
-                          ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _scriptController.clear(),
+                          icon: const Icon(Icons.clear),
+                          label: const Text('清空'),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            
-            const SizedBox(height: 16),
-            
-            // 日志
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Text('日志', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        const Spacer(),
-                        TextButton(onPressed: () => setState(() => _log = ''), child: const Text('清空')),
-                      ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // 日志
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text('日志', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const Spacer(),
+                      TextButton(onPressed: () => setState(() => _log = ''), child: const Text('清空')),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 150,
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(height: 8),
+                    child: SingleChildScrollView(
+                      child: Text(_log, style: const TextStyle(fontFamily: 'monospace', fontSize: 11)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildCaptureTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('屏幕截图', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 12),
+                  if (!_capturePermission)
                     Container(
-                      height: 150,
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
+                        color: Colors.orange.shade50,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: SingleChildScrollView(
-                        child: Text(_log, style: const TextStyle(fontFamily: 'monospace', fontSize: 11)),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.warning, color: Colors.orange),
+                          const SizedBox(width: 12),
+                          const Expanded(child: Text('需要先授权截屏权限')),
+                          ElevatedButton(
+                            onPressed: _requestCapturePermission,
+                            child: const Text('授权'),
+                          ),
+                        ],
                       ),
+                    )
+                  else
+                    ElevatedButton.icon(
+                      onPressed: _takeScreenshot,
+                      icon: const Icon(Icons.camera),
+                      label: const Text('截取屏幕'),
                     ),
-                  ],
-                ),
+                  const SizedBox(height: 16),
+                  if (_screenshotData != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('截图预览 (${_screenshotData!.length} bytes)', 
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.memory(
+                            _screenshotData!,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                final success = await automate.capture.captureToFile(
+                                  '/sdcard/Download/screenshot_${DateTime.now().millisecondsSinceEpoch}.png',
+                                );
+                                _addLog('保存截图: ${success ? "成功" : "失败"}');
+                              },
+                              icon: const Icon(Icons.save),
+                              label: const Text('保存'),
+                            ),
+                            const SizedBox(width: 12),
+                            OutlinedButton.icon(
+                              onPressed: () => setState(() => _screenshotData = null),
+                              icon: const Icon(Icons.clear),
+                              label: const Text('清除'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          // 日志
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text('日志', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const Spacer(),
+                      TextButton(onPressed: () => setState(() => _log = ''), child: const Text('清空')),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 150,
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Text(_log, style: const TextStyle(fontFamily: 'monospace', fontSize: 11)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -537,12 +771,10 @@ class _AssistiveBubbleState extends State<AssistiveBubble> with TickerProviderSt
   Future<void> _initWindow() async {
     _window = Window.of(context);
     
-    // 监听拖拽事件
     _window?.on(EventType.WindowDragStart, (w, d) => _onActivity());
     _window?.on(EventType.WindowDragging, (w, d) => _onActivity());
     _window?.on(EventType.WindowDragEnd, (w, d) => _scheduleIdle());
     
-    // 监听数据
     _window?.onData((source, name, data) async {
       if (data is Map) {
         final status = data['status'] as String?;
@@ -572,12 +804,10 @@ class _AssistiveBubbleState extends State<AssistiveBubble> with TickerProviderSt
     _onActivity();
     _scheduleIdle();
     
-    // 创建/显示面板窗口
     final floatwing = FloatwingPlugin();
     var panel = floatwing.windows['automate_panel'];
     
     if (panel != null) {
-      // 传递位置给面板
       final x = _window?.config?.x ?? 0;
       final y = _window?.config?.y ?? 0;
       panel.share([x, y]);
@@ -588,7 +818,7 @@ class _AssistiveBubbleState extends State<AssistiveBubble> with TickerProviderSt
         width: WindowSize.MatchParent,
         height: WindowSize.MatchParent,
         clickable: true,
-        focusable: true,  // 需要可聚焦才能接收触摸事件
+        focusable: true,
         entry: 'floatPanelMain',
       );
       panel = await floatwing.createWindow('automate_panel', config, start: false);
@@ -699,13 +929,10 @@ class _TaskPanelState extends State<TaskPanel> with SingleTickerProviderStateMix
 
   Future<void> _initWindow() async {
     _window = Window.of(context);
-    print('[TaskPanel] _initWindow: _window=$_window');
     _window?.on(EventType.WindowStarted, (w, d) {
-      print('[TaskPanel] WindowStarted event received');
       setState(() => _show = true);
     });
     _window?.onData((source, name, data) async {
-      print('[TaskPanel] onData: source=$source, name=$name, data=$data');
       if (data is List && data.length >= 2) {
         setState(() {
           _bubbleX = (data[0] as num).toDouble();
@@ -714,25 +941,20 @@ class _TaskPanelState extends State<TaskPanel> with SingleTickerProviderStateMix
       }
       return null;
     });
-    // 直接设置 show=true 来测试
     setState(() => _show = true);
   }
 
   void _close() {
     setState(() => _show = false);
-    // 立即销毁窗口，force=true 确保完全移除
     _window?.close(force: true);
   }
 
   @override
   Widget build(BuildContext context) {
-    print('[TaskPanel] build: _show=$_show, screenSize=${MediaQuery.of(context).size}');
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     
-    // 如果屏幕尺寸为0，说明还没有渲染好
     if (screenWidth == 0 || screenHeight == 0) {
-      print('[TaskPanel] Screen size is 0, waiting...');
       return const MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
@@ -751,10 +973,9 @@ class _TaskPanelState extends State<TaskPanel> with SingleTickerProviderStateMix
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
       home: Container(
-        color: Colors.black54,  // 半透明背景遮罩
+        color: Colors.black54,
         child: Stack(
           children: [
-            // 面板
             Positioned(
               left: panelLeft,
               top: panelTop,
@@ -772,7 +993,6 @@ class _TaskPanelState extends State<TaskPanel> with SingleTickerProviderStateMix
                   shadowColor: Colors.black54,
                   child: Column(
                     children: [
-                      // 标题栏
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(color: Colors.grey[850]),
@@ -798,7 +1018,6 @@ class _TaskPanelState extends State<TaskPanel> with SingleTickerProviderStateMix
                           ],
                         ),
                       ),
-                      // Tab 栏
                       TabBar(
                         controller: _tabController,
                         labelColor: Colors.blue,
@@ -809,7 +1028,6 @@ class _TaskPanelState extends State<TaskPanel> with SingleTickerProviderStateMix
                           Tab(text: '日志 (${_logs.length})'),
                         ],
                       ),
-                      // Tab 内容
                       Expanded(
                         child: TabBarView(
                           controller: _tabController,
@@ -856,7 +1074,7 @@ class _TaskPanelState extends State<TaskPanel> with SingleTickerProviderStateMix
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
             title: Text(task['name'] ?? '任务'),
-            subtitle: Text('运行中'),
+            subtitle: const Text('运行中'),
             trailing: IconButton(
               icon: const Icon(Icons.stop, color: Colors.red),
               onPressed: () => FlutterAutomate.instance.stopAll(),
@@ -888,28 +1106,41 @@ class _TaskPanelState extends State<TaskPanel> with SingleTickerProviderStateMix
 class _PermissionRow extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String subtitle;
   final bool enabled;
   final VoidCallback onRequest;
 
   const _PermissionRow({
     required this.icon,
     required this.title,
+    required this.subtitle,
     required this.enabled,
     required this.onRequest,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: enabled ? Colors.green : Colors.grey),
-        const SizedBox(width: 8),
-        Expanded(child: Text(title)),
-        if (enabled)
-          const Icon(Icons.check, color: Colors.green, size: 20)
-        else
-          TextButton(onPressed: onRequest, child: const Text('开启')),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 24, color: enabled ? Colors.green : Colors.grey),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+                Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              ],
+            ),
+          ),
+          if (enabled)
+            const Icon(Icons.check_circle, color: Colors.green, size: 24)
+          else
+            ElevatedButton(onPressed: onRequest, child: const Text('开启')),
+        ],
+      ),
     );
   }
 }

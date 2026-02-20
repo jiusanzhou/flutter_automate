@@ -45,6 +45,10 @@ object ScreenCapture {
     
     // 存储待处理的权限请求回调
     private var pendingCallback: ((Boolean) -> Unit)? = null
+    // 存储 resultCode 和 data 用于在服务启动后处理
+    private var pendingResultCode: Int = 0
+    private var pendingData: Intent? = null
+    private var pendingContext: Context? = null
     
     /**
      * 初始化屏幕参数
@@ -93,21 +97,70 @@ object ScreenCapture {
             return false
         }
         
-        val projectionManager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        mediaProjection = projectionManager.getMediaProjection(resultCode, data)
-        
-        if (mediaProjection == null) {
-            pendingCallback?.invoke(false)
-            pendingCallback = null
-            return false
+        // Android 10+ 需要先启动前台服务
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            pendingResultCode = resultCode
+            pendingData = data
+            pendingContext = context
+            
+            // 启动前台服务
+            ScreenCaptureService.start(context)
+            
+            // 延迟一点等服务启动完成
+            handler.postDelayed({
+                initMediaProjection()
+            }, 200)
+        } else {
+            // Android 9 及以下直接初始化
+            initMediaProjectionDirect(context, resultCode, data)
         }
         
-        setupVirtualDisplay()
-        isInitialized = true
-        
-        pendingCallback?.invoke(true)
-        pendingCallback = null
         return true
+    }
+    
+    private fun initMediaProjection() {
+        val context = pendingContext ?: return
+        val data = pendingData ?: return
+        
+        initMediaProjectionDirect(context, pendingResultCode, data)
+        
+        // 清理
+        pendingContext = null
+        pendingData = null
+        pendingResultCode = 0
+    }
+    
+    private fun initMediaProjectionDirect(context: Context, resultCode: Int, data: Intent) {
+        try {
+            val projectionManager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+            mediaProjection = projectionManager.getMediaProjection(resultCode, data)
+            
+            if (mediaProjection == null) {
+                pendingCallback?.invoke(false)
+                pendingCallback = null
+                return
+            }
+            
+            // Android 14+ 需要先注册 callback
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                mediaProjection?.registerCallback(object : MediaProjection.Callback() {
+                    override fun onStop() {
+                        Log.i(TAG, "MediaProjection stopped")
+                        release()
+                    }
+                }, handler)
+            }
+            
+            setupVirtualDisplay()
+            isInitialized = true
+            
+            pendingCallback?.invoke(true)
+            pendingCallback = null
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to init MediaProjection", e)
+            pendingCallback?.invoke(false)
+            pendingCallback = null
+        }
     }
     
     /**
@@ -229,6 +282,10 @@ object ScreenCapture {
         mediaProjection = null
         
         isInitialized = false
+        
+        // 停止前台服务
+        pendingContext?.let { ScreenCaptureService.stop(it) }
+        
         Log.i(TAG, "ScreenCapture released")
     }
 }
