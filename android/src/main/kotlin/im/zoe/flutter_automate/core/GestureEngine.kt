@@ -247,6 +247,29 @@ object GestureEngine {
     }
     
     /**
+     * 沿路径执行手势 (List 版本)
+     */
+    fun gesture(duration: Long, points: List<Pair<Float, Float>>): Boolean {
+        if (points.size < 2) return false
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return false
+        
+        val service = AutomateAccessibilityService.instance ?: return false
+        
+        val path = Path().apply {
+            moveTo(points[0].first, points[0].second)
+            for (i in 1 until points.size) {
+                lineTo(points[i].first, points[i].second)
+            }
+        }
+        
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, duration))
+            .build()
+        
+        return dispatchGestureSync(service, gesture)
+    }
+    
+    /**
      * 多指手势
      */
     fun gestures(vararg strokeDescriptions: StrokeDesc): Boolean {

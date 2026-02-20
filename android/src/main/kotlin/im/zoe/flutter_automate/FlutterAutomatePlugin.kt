@@ -41,6 +41,12 @@ class FlutterAutomatePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         channel.setMethodCallHandler(this)
         context = binding.applicationContext
         
+        // 初始化存储工具
+        StorageUtils.init(context)
+        
+        // 初始化日志管理器
+        ScriptLogManager.init(context)
+        
         // 初始化脚本引擎管理器
         scriptEngineManager = ScriptEngineManager.getInstance(context)
     }
@@ -95,6 +101,7 @@ class FlutterAutomatePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             "uiSetText" -> handleUiSetText(call, result)
             "uiExists" -> handleUiExists(call, result)
             "uiWaitFor" -> handleUiWaitFor(call, result)
+            "dumpUI" -> handleDumpUI(result)
             
             // ==================== 手势 ====================
             "gestureClick" -> handleGestureClick(call, result)
@@ -128,6 +135,12 @@ class FlutterAutomatePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             "deviceSetClipboard" -> handleDeviceSetClipboard(call, result)
             "deviceVibrate" -> handleDeviceVibrate(call, result)
             "deviceGetBattery" -> handleDeviceGetBattery(result)
+            
+            // ==================== 日志 ====================
+            "getLogs" -> handleGetLogs(call, result)
+            "getLogFiles" -> handleGetLogFiles(result)
+            "readLogFile" -> handleReadLogFile(call, result)
+            "clearLogs" -> handleClearLogs(result)
             
             else -> result.notImplemented()
         }
@@ -165,9 +178,12 @@ class FlutterAutomatePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
     
     private fun handleIsAccessibilityEnabled(result: Result) {
-        // 直接使用 AccessibilityServiceHelper 检查
-        val enabled = AccessibilityServiceHelper.isEnabled(context)
-        android.util.Log.i("FlutterAutomatePlugin", "isAccessibilityEnabled: $enabled")
+        // 优先检查 AutomateAccessibilityService.instance
+        val instanceEnabled = AutomateAccessibilityService.isEnabled()
+        // 同时检查系统设置
+        val settingsEnabled = AccessibilityServiceHelper.isEnabled(context)
+        val enabled = instanceEnabled || settingsEnabled
+        android.util.Log.i("FlutterAutomatePlugin", "isAccessibilityEnabled: instance=$instanceEnabled, settings=$settingsEnabled, result=$enabled")
         result.success(enabled)
     }
     
@@ -317,6 +333,95 @@ class FlutterAutomatePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 } else {
                     result.success(null)
                 }
+            }
+        }
+    }
+    
+    private fun handleDumpUI(result: Result) {
+        scope.launch(Dispatchers.IO) {
+            val service = AutomateAccessibilityService.instance
+            if (service == null) {
+                withContext(Dispatchers.Main) {
+                    result.error("ACCESSIBILITY_NOT_ENABLED", "Accessibility service is not enabled", null)
+                }
+                return@launch
+            }
+            
+            val rootNode = service.getRootNode()
+            if (rootNode == null) {
+                withContext(Dispatchers.Main) {
+                    result.success(mapOf(
+                        "elements" to emptyList<Map<String, Any?>>(),
+                        "packageName" to null,
+                        "activityName" to null
+                    ))
+                }
+                return@launch
+            }
+            
+            val elements = mutableListOf<Map<String, Any?>>()
+            var index = 0
+            
+            fun collectElements(node: android.view.accessibility.AccessibilityNodeInfo, depth: Int) {
+                // Only collect meaningful elements (clickable, has text, or top-level containers)
+                val hasText = !node.text.isNullOrEmpty()
+                val hasDesc = !node.contentDescription.isNullOrEmpty()
+                val isClickable = node.isClickable
+                val isScrollable = node.isScrollable
+                val isInteractive = isClickable || isScrollable || hasText || hasDesc
+                
+                if (isInteractive && depth < 15) {
+                    val bounds = android.graphics.Rect()
+                    node.getBoundsInScreen(bounds)
+                    
+                    val className = node.className?.toString() ?: ""
+                    val type = when {
+                        className.contains("Button", ignoreCase = true) -> "button"
+                        className.contains("EditText", ignoreCase = true) -> "input"
+                        className.contains("TextView", ignoreCase = true) -> "text"
+                        className.contains("ImageView", ignoreCase = true) -> "image"
+                        className.contains("CheckBox", ignoreCase = true) -> "checkbox"
+                        className.contains("Switch", ignoreCase = true) -> "switch"
+                        className.contains("RecyclerView", ignoreCase = true) -> "list"
+                        className.contains("ListView", ignoreCase = true) -> "list"
+                        className.contains("ScrollView", ignoreCase = true) -> "scroll"
+                        else -> "view"
+                    }
+                    
+                    elements.add(mapOf(
+                        "index" to index++,
+                        "type" to type,
+                        "text" to node.text?.toString(),
+                        "contentDesc" to node.contentDescription?.toString(),
+                        "resourceId" to node.viewIdResourceName,
+                        "bounds" to mapOf(
+                            "left" to bounds.left,
+                            "top" to bounds.top,
+                            "right" to bounds.right,
+                            "bottom" to bounds.bottom
+                        ),
+                        "isClickable" to node.isClickable,
+                        "isScrollable" to node.isScrollable,
+                        "isEnabled" to node.isEnabled
+                    ))
+                }
+                
+                // Recurse children
+                for (i in 0 until node.childCount) {
+                    node.getChild(i)?.let { child ->
+                        collectElements(child, depth + 1)
+                    }
+                }
+            }
+            
+            collectElements(rootNode, 0)
+            
+            withContext(Dispatchers.Main) {
+                result.success(mapOf(
+                    "elements" to elements,
+                    "packageName" to rootNode.packageName?.toString(),
+                    "activityName" to null // TODO: get activity name if needed
+                ))
             }
         }
     }
@@ -569,5 +674,46 @@ class FlutterAutomatePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     private fun handleDeviceGetBattery(result: Result) {
         val level = DeviceUtils.getBatteryLevel(context)
         result.success(level)
+    }
+    
+    // ==================== 日志处理 ====================
+    
+    private fun handleGetLogs(call: MethodCall, result: Result) {
+        val count = call.argument<Int>("count") ?: 100
+        val logs = ScriptLogManager.getRecentLogs(count)
+        result.success(logs.map { log ->
+            mapOf(
+                "level" to log.level,
+                "message" to log.message,
+                "timestamp" to log.timestamp,
+                "formattedTime" to log.formattedTime
+            )
+        })
+    }
+    
+    private fun handleGetLogFiles(result: Result) {
+        val files = ScriptLogManager.getLogFiles()
+        result.success(files.map { file ->
+            mapOf(
+                "name" to file.name,
+                "path" to file.absolutePath,
+                "size" to file.length(),
+                "lastModified" to file.lastModified()
+            )
+        })
+    }
+    
+    private fun handleReadLogFile(call: MethodCall, result: Result) {
+        val path = call.argument<String>("path") ?: run {
+            result.error("INVALID_ARGUMENT", "path is required", null)
+            return
+        }
+        val content = ScriptLogManager.readLogFile(java.io.File(path))
+        result.success(content)
+    }
+    
+    private fun handleClearLogs(result: Result) {
+        ScriptLogManager.clearMemoryLogs()
+        result.success(true)
     }
 }

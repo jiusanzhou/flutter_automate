@@ -34,6 +34,14 @@ class UiObject(private val node: AccessibilityNodeInfo) {
     fun desc(): String = node.contentDescription?.toString() ?: ""
     
     /**
+     * 获取内容 (desc || text)
+     */
+    fun content(): String {
+        val d = desc()
+        return if (d.isNotEmpty()) d else text()
+    }
+    
+    /**
      * 获取包名
      */
     fun packageName(): String = node.packageName?.toString() ?: ""
@@ -68,6 +76,97 @@ class UiObject(private val node: AccessibilityNodeInfo) {
         val bounds = bounds()
         return (bounds.top + bounds.bottom) / 2
     }
+    
+    /**
+     * 边界便捷方法
+     */
+    fun left(): Int = bounds().left
+    fun top(): Int = bounds().top
+    fun right(): Int = bounds().right
+    fun bottom(): Int = bounds().bottom
+    fun width(): Int = bounds().width()
+    fun height(): Int = bounds().height()
+    
+    /**
+     * 获取在父节点中的索引
+     */
+    fun indexInParent(): Int {
+        val parent = node.parent ?: return -1
+        for (i in 0 until parent.childCount) {
+            val child = parent.getChild(i)
+            if (child == node) return i
+        }
+        return -1
+    }
+    
+    /**
+     * 获取节点深度
+     */
+    fun depth(): Int {
+        var d = 0
+        var p = node.parent
+        while (p != null) {
+            d++
+            p = p.parent
+        }
+        return d
+    }
+    
+    /**
+     * 获取绘制顺序
+     */
+    fun drawingOrder(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            node.drawingOrder
+        } else 0
+    }
+    
+    /**
+     * 点击控件边界 (支持偏移)
+     */
+    fun clickBounds(offsetX: Int = 0, offsetY: Int = 0): Boolean {
+        val service = AutomateAccessibilityService.instance ?: return false
+        return service.click((centerX() + offsetX).toFloat(), (centerY() + offsetY).toFloat())
+    }
+    
+    /**
+     * 获取指定索引的兄弟节点
+     */
+    fun sibling(index: Int): UiObject? {
+        val parent = node.parent ?: return null
+        val actualIndex = if (index < 0) parent.childCount + index else index
+        if (actualIndex < 0 || actualIndex >= parent.childCount) return null
+        return parent.getChild(actualIndex)?.let { UiObject(it) }
+    }
+    
+    /**
+     * 获取前一个兄弟节点
+     */
+    fun previousSibling(): UiObject? {
+        val idx = indexInParent()
+        if (idx <= 0) return null
+        return sibling(idx - 1)
+    }
+    
+    /**
+     * 获取后一个兄弟节点
+     */
+    fun nextSibling(): UiObject? {
+        val idx = indexInParent()
+        val parent = node.parent ?: return null
+        if (idx < 0 || idx >= parent.childCount - 1) return null
+        return sibling(idx + 1)
+    }
+    
+    /**
+     * 获取第一个子节点
+     */
+    fun firstChild(): UiObject? = child(0)
+    
+    /**
+     * 获取最后一个子节点
+     */
+    fun lastChild(): UiObject? = child(childCount() - 1)
     
     // ==================== 状态检查 ====================
     

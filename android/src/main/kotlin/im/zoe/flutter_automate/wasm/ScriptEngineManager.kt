@@ -297,7 +297,10 @@ class QuickJSLanguageModule(
     override val extensions = listOf("js", "mjs")
     
     override fun execute(code: String, filename: String): Any? {
-        return engine.eval(code, filename)
+        Log.i("QuickJSLanguageModule", "execute: code.length=${code.length}, filename=$filename")
+        val result = engine.eval(code, filename)
+        Log.i("QuickJSLanguageModule", "execute: result=$result")
+        return result
     }
     
     override fun stop() {

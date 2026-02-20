@@ -24,6 +24,12 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        
+        <!-- Floatwing Service for floating windows -->
+        <service
+            android:name="im.zoe.labs.flutter_floatwing.FloatwingService"
+            android:exported="false" />
+        
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

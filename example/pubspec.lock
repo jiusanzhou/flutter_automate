@@ -70,7 +70,7 @@ packages:
     source: path
     version: "1.0.0"
   flutter_floatwing:
-    dependency: transitive
+    dependency: "direct main"
     description:
       path: "../../flutter_floatwing"
       relative: true

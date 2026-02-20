@@ -242,4 +242,32 @@ object DeviceUtils {
     fun shellExec(command: String): ShellResult {
         return AccessibilityServiceHelper.execShell(command, root = false)
     }
+    
+    // ==================== 屏幕控制 ====================
+    
+    @Suppress("DEPRECATION")
+    fun wakeUpScreen(context: Context): Boolean {
+        return try {
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+            if (!powerManager.isInteractive) {
+                val wakeLock = powerManager.newWakeLock(
+                    android.os.PowerManager.FULL_WAKE_LOCK or
+                            android.os.PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                            android.os.PowerManager.ON_AFTER_RELEASE,
+                    "flutter_automate:wakeup"
+                )
+                wakeLock.acquire(3000)
+                wakeLock.release()
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+    
+    fun isScreenOn(context: Context): Boolean {
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        return powerManager.isInteractive
+    }
 }

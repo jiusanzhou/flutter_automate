@@ -108,6 +108,15 @@ class FlutterAutomate {
   /// 按描述查找
   UiSelector desc(String value) => selector().desc(value);
 
+  /// 获取当前界面所有 UI 元素（用于 AI Agent）
+  Future<UiTree> dumpUI() async {
+    final result = await _channel.invokeMethod<Map>('dumpUI');
+    if (result == null) {
+      return UiTree(elements: [], packageName: null, activityName: null);
+    }
+    return UiTree.fromMap(Map<String, dynamic>.from(result));
+  }
+
   // ==================== 手势 ====================
 
   /// 点击坐标
@@ -235,6 +244,100 @@ class FlutterAutomate {
 
   /// 对话框
   DialogManager get dialogs => DialogManager._(_channel);
+  
+  /// 日志管理
+  LogManager get logs => LogManager._(_channel);
+}
+
+// ==================== 日志管理 ====================
+
+class LogManager {
+  final MethodChannel _channel;
+
+  LogManager._(this._channel);
+
+  /// 获取最近的日志
+  Future<List<LogEntry>> getRecent({int count = 100}) async {
+    final result = await _channel.invokeMethod<List>('getLogs', {
+      'count': count,
+    });
+    if (result == null) return [];
+    return result
+        .map((e) => LogEntry.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  /// 获取日志文件列表
+  Future<List<LogFile>> getFiles() async {
+    final result = await _channel.invokeMethod<List>('getLogFiles');
+    if (result == null) return [];
+    return result
+        .map((e) => LogFile.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  /// 读取日志文件内容
+  Future<String> readFile(String path) async {
+    final result = await _channel.invokeMethod<String>('readLogFile', {
+      'path': path,
+    });
+    return result ?? '';
+  }
+
+  /// 清空内存日志
+  Future<bool> clear() async {
+    final result = await _channel.invokeMethod<bool>('clearLogs');
+    return result ?? false;
+  }
+}
+
+class LogEntry {
+  final String level;
+  final String message;
+  final int timestamp;
+  final String formattedTime;
+
+  LogEntry._({
+    required this.level,
+    required this.message,
+    required this.timestamp,
+    required this.formattedTime,
+  });
+
+  factory LogEntry.fromMap(Map<String, dynamic> map) {
+    return LogEntry._(
+      level: map['level'] as String? ?? 'log',
+      message: map['message'] as String? ?? '',
+      timestamp: map['timestamp'] as int? ?? 0,
+      formattedTime: map['formattedTime'] as String? ?? '',
+    );
+  }
+  
+  @override
+  String toString() => '[$formattedTime] [$level] $message';
+}
+
+class LogFile {
+  final String name;
+  final String path;
+  final int size;
+  final int lastModified;
+
+  LogFile._({
+    required this.name,
+    required this.path,
+    required this.size,
+    required this.lastModified,
+  });
+
+  factory LogFile.fromMap(Map<String, dynamic> map) {
+    return LogFile._(
+      name: map['name'] as String? ?? '',
+      path: map['path'] as String? ?? '',
+      size: map['size'] as int? ?? 0,
+      lastModified: map['lastModified'] as int? ?? 0,
+    );
+  }
 }
 
 // ==================== UI 选择器 ====================
@@ -453,6 +556,127 @@ class Rect {
 
   int get width => right - left;
   int get height => bottom - top;
+}
+
+// ==================== UI Tree (for AI Agent) ====================
+
+/// UI 树结构，包含当前界面所有元素
+class UiTree {
+  final List<UiElement> elements;
+  final String? packageName;
+  final String? activityName;
+
+  const UiTree({
+    required this.elements,
+    this.packageName,
+    this.activityName,
+  });
+
+  factory UiTree.fromMap(Map<String, dynamic> map) {
+    final elementsList = map['elements'] as List? ?? [];
+    return UiTree(
+      elements: elementsList
+          .map((e) => UiElement.fromMap(Map<String, dynamic>.from(e as Map)))
+          .toList(),
+      packageName: map['packageName'] as String?,
+      activityName: map['activityName'] as String?,
+    );
+  }
+
+  /// 转换为 AI 可读的字符串
+  String toAccessibleString() {
+    final buffer = StringBuffer();
+    if (packageName != null) {
+      buffer.writeln('App: $packageName');
+    }
+    if (activityName != null) {
+      buffer.writeln('Screen: $activityName');
+    }
+    buffer.writeln('Elements:');
+    for (var i = 0; i < elements.length; i++) {
+      buffer.writeln('[${i}] ${elements[i].toPromptString()}');
+    }
+    return buffer.toString();
+  }
+
+  /// 根据索引获取元素
+  UiElement? getByIndex(int index) {
+    if (index >= 0 && index < elements.length) {
+      return elements[index];
+    }
+    return null;
+  }
+}
+
+/// UI 元素（轻量级，用于 AI Agent）
+class UiElement {
+  final int index;
+  final String type;
+  final String? text;
+  final String? contentDesc;
+  final String? resourceId;
+  final Rect bounds;
+  final bool isClickable;
+  final bool isScrollable;
+  final bool isEnabled;
+
+  const UiElement({
+    required this.index,
+    required this.type,
+    this.text,
+    this.contentDesc,
+    this.resourceId,
+    required this.bounds,
+    this.isClickable = false,
+    this.isScrollable = false,
+    this.isEnabled = true,
+  });
+
+  factory UiElement.fromMap(Map<String, dynamic> map) {
+    final boundsMap = map['bounds'] as Map<String, dynamic>?;
+    return UiElement(
+      index: map['index'] as int? ?? 0,
+      type: map['type'] as String? ?? 'view',
+      text: map['text'] as String?,
+      contentDesc: map['contentDesc'] as String?,
+      resourceId: map['resourceId'] as String?,
+      bounds: boundsMap != null
+          ? Rect(
+              left: boundsMap['left'] as int? ?? 0,
+              top: boundsMap['top'] as int? ?? 0,
+              right: boundsMap['right'] as int? ?? 0,
+              bottom: boundsMap['bottom'] as int? ?? 0,
+            )
+          : Rect.zero,
+      isClickable: map['isClickable'] as bool? ?? false,
+      isScrollable: map['isScrollable'] as bool? ?? false,
+      isEnabled: map['isEnabled'] as bool? ?? true,
+    );
+  }
+
+  /// 转换为 AI 提示词字符串
+  String toPromptString() {
+    final parts = <String>[type];
+    if (text != null && text!.isNotEmpty) {
+      parts.add('"${_truncate(text!, 50)}"');
+    }
+    if (contentDesc != null && contentDesc!.isNotEmpty) {
+      parts.add('(${_truncate(contentDesc!, 30)})');
+    }
+    if (isClickable) parts.add('[clickable]');
+    if (isScrollable) parts.add('[scrollable]');
+    if (!isEnabled) parts.add('[disabled]');
+    return parts.join(' ');
+  }
+
+  /// 获取中心点
+  int get centerX => (bounds.left + bounds.right) ~/ 2;
+  int get centerY => (bounds.top + bounds.bottom) ~/ 2;
+
+  String _truncate(String s, int maxLen) {
+    if (s.length <= maxLen) return s;
+    return '${s.substring(0, maxLen - 3)}...';
+  }
 }
 
 // ==================== 脚本执行 ====================

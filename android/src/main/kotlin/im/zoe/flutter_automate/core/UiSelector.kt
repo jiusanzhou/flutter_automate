@@ -19,16 +19,26 @@ class UiSelector {
     
     private var idEquals: String? = null
     private var idContains: String? = null
+    private var idStartsWith: String? = null
+    private var idEndsWith: String? = null
     private var idMatches: Pattern? = null
     
     private var classNameEquals: String? = null
     private var classNameContains: String? = null
+    private var classNameStartsWith: String? = null
+    private var classNameEndsWith: String? = null
+    private var classNameMatches: Pattern? = null
     
     private var descEquals: String? = null
     private var descContains: String? = null
+    private var descStartsWith: String? = null
+    private var descEndsWith: String? = null
     private var descMatches: Pattern? = null
     
     private var packageNameEquals: String? = null
+    private var packageNameContains: String? = null
+    private var packageNameStartsWith: String? = null
+    private var packageNameEndsWith: String? = null
     
     private var clickable: Boolean? = null
     private var scrollable: Boolean? = null
@@ -39,6 +49,8 @@ class UiSelector {
     private var focusable: Boolean? = null
     private var focused: Boolean? = null
     private var checkable: Boolean? = null
+    private var longClickable: Boolean? = null
+    private var visibleToUser: Boolean? = null
     
     private var boundsInside: Rect? = null
     private var boundsContains: Rect? = null
@@ -85,6 +97,16 @@ class UiSelector {
         return this
     }
     
+    fun idStartsWith(value: String): UiSelector {
+        idStartsWith = value
+        return this
+    }
+    
+    fun idEndsWith(value: String): UiSelector {
+        idEndsWith = value
+        return this
+    }
+    
     fun idMatches(regex: String): UiSelector {
         idMatches = Pattern.compile(regex)
         return this
@@ -102,6 +124,21 @@ class UiSelector {
         return this
     }
     
+    fun classNameStartsWith(value: String): UiSelector {
+        classNameStartsWith = value
+        return this
+    }
+    
+    fun classNameEndsWith(value: String): UiSelector {
+        classNameEndsWith = value
+        return this
+    }
+    
+    fun classNameMatches(regex: String): UiSelector {
+        classNameMatches = Pattern.compile(regex)
+        return this
+    }
+    
     // ==================== 描述选择器 ====================
     
     fun desc(description: String): UiSelector {
@@ -114,6 +151,16 @@ class UiSelector {
         return this
     }
     
+    fun descStartsWith(value: String): UiSelector {
+        descStartsWith = value
+        return this
+    }
+    
+    fun descEndsWith(value: String): UiSelector {
+        descEndsWith = value
+        return this
+    }
+    
     fun descMatches(regex: String): UiSelector {
         descMatches = Pattern.compile(regex)
         return this
@@ -123,6 +170,21 @@ class UiSelector {
     
     fun packageName(pkg: String): UiSelector {
         packageNameEquals = pkg
+        return this
+    }
+    
+    fun packageNameContains(value: String): UiSelector {
+        packageNameContains = value
+        return this
+    }
+    
+    fun packageNameStartsWith(value: String): UiSelector {
+        packageNameStartsWith = value
+        return this
+    }
+    
+    fun packageNameEndsWith(value: String): UiSelector {
+        packageNameEndsWith = value
         return this
     }
     
@@ -170,6 +232,16 @@ class UiSelector {
     
     fun checkable(value: Boolean = true): UiSelector {
         checkable = value
+        return this
+    }
+    
+    fun longClickable(value: Boolean = true): UiSelector {
+        longClickable = value
+        return this
+    }
+    
+    fun visibleToUser(value: Boolean = true): UiSelector {
+        visibleToUser = value
         return this
     }
     
@@ -278,24 +350,34 @@ class UiSelector {
         val nodeId = node.viewIdResourceName ?: ""
         idEquals?.let { if (nodeId != it && !nodeId.endsWith(":id/$it")) return false }
         idContains?.let { if (!nodeId.contains(it)) return false }
-        idMatches?.let { if (!it.matcher(nodeId).matches()) return false }
+        idStartsWith?.let { if (!nodeId.startsWith(it) && !nodeId.substringAfter(":id/", "").startsWith(it)) return false }
+        idEndsWith?.let { if (!nodeId.endsWith(it)) return false }
+        idMatches?.let { if (!it.matcher(nodeId).find()) return false }
         
         // 类名匹配
         val nodeClassName = node.className?.toString() ?: ""
         classNameEquals?.let { 
-            if (nodeClassName != it && !nodeClassName.endsWith(".$it")) return false 
+            if (nodeClassName != it && !nodeClassName.endsWith(".$it") && !nodeClassName.equals("android.widget.$it")) return false 
         }
         classNameContains?.let { if (!nodeClassName.contains(it)) return false }
+        classNameStartsWith?.let { if (!nodeClassName.startsWith(it) && !nodeClassName.startsWith("android.widget.$it")) return false }
+        classNameEndsWith?.let { if (!nodeClassName.endsWith(it)) return false }
+        classNameMatches?.let { if (!it.matcher(nodeClassName).find()) return false }
         
         // 描述匹配
         val nodeDesc = node.contentDescription?.toString() ?: ""
         descEquals?.let { if (nodeDesc != it) return false }
         descContains?.let { if (!nodeDesc.contains(it)) return false }
-        descMatches?.let { if (!it.matcher(nodeDesc).matches()) return false }
+        descStartsWith?.let { if (!nodeDesc.startsWith(it)) return false }
+        descEndsWith?.let { if (!nodeDesc.endsWith(it)) return false }
+        descMatches?.let { if (!it.matcher(nodeDesc).find()) return false }
         
         // 包名匹配
         val nodePkg = node.packageName?.toString() ?: ""
         packageNameEquals?.let { if (nodePkg != it) return false }
+        packageNameContains?.let { if (!nodePkg.contains(it)) return false }
+        packageNameStartsWith?.let { if (!nodePkg.startsWith(it)) return false }
+        packageNameEndsWith?.let { if (!nodePkg.endsWith(it)) return false }
         
         // 属性匹配
         clickable?.let { if (node.isClickable != it) return false }
@@ -307,6 +389,8 @@ class UiSelector {
         focusable?.let { if (node.isFocusable != it) return false }
         focused?.let { if (node.isFocused != it) return false }
         checkable?.let { if (node.isCheckable != it) return false }
+        longClickable?.let { if (node.isLongClickable != it) return false }
+        visibleToUser?.let { if (node.isVisibleToUser != it) return false }
         
         // 位置匹配
         val nodeBounds = Rect().also { node.getBoundsInScreen(it) }

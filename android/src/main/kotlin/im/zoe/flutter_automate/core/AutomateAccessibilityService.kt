@@ -34,16 +34,8 @@ class AutomateAccessibilityService : AccessibilityService() {
          * 检查服务是否已启用
          */
         fun isEnabled(): Boolean {
-            // 优先检查 instance
-            if (instance != null) return true
-            
-            // 如果 instance 为空，检查系统设置
-            return try {
-                val context = instance?.applicationContext ?: return false
-                AccessibilityServiceHelper.isEnabled(context)
-            } catch (e: Exception) {
-                false
-            }
+            // 直接检查 instance 是否存在
+            return instance != null
         }
 
         /**
@@ -99,6 +91,7 @@ class AutomateAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
+        android.util.Log.i("AutomateAccessibilityService", "onServiceConnected: instance set")
         
         // 配置服务
         serviceInfo = serviceInfo?.apply {
