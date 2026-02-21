@@ -167,6 +167,10 @@ class FlutterAutomatePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             "permissionHasBatteryOptimization" -> handlePermissionHasBatteryOptimization(result)
             "permissionRequestBatteryOptimization" -> handlePermissionRequestBatteryOptimization(result)
             
+            // ==================== Shell 输入 ====================
+            "shellInputText" -> handleShellInputText(call, result)
+            "shellInputKeyEvent" -> handleShellInputKeyEvent(call, result)
+            
             else -> result.notImplemented()
         }
     }
@@ -1052,6 +1056,55 @@ class FlutterAutomatePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             result.success(true)
         } catch (e: Exception) {
             result.success(false)
+        }
+    }
+    
+    // ==================== Shell 输入处理 ====================
+    
+    private fun handleShellInputText(call: MethodCall, result: Result) {
+        val text = call.argument<String>("text") ?: ""
+        
+        scope.launch(Dispatchers.IO) {
+            try {
+                // 使用无障碍服务输入文本（更可靠）
+                val service = AutomateAccessibilityService.instance
+                if (service != null) {
+                    val success = service.inputText(text)
+                    withContext(Dispatchers.Main) {
+                        result.success(success)
+                    }
+                } else {
+                    // 回退到使用 shell input 命令（需要 root 或 adb 权限）
+                    val escapedText = text.replace("'", "'\\''")
+                    val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", "input text '$escapedText'"))
+                    val exitCode = process.waitFor()
+                    withContext(Dispatchers.Main) {
+                        result.success(exitCode == 0)
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    result.success(false)
+                }
+            }
+        }
+    }
+    
+    private fun handleShellInputKeyEvent(call: MethodCall, result: Result) {
+        val keyCode = call.argument<Int>("keyCode") ?: return result.success(false)
+        
+        scope.launch(Dispatchers.IO) {
+            try {
+                val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", "input keyevent $keyCode"))
+                val exitCode = process.waitFor()
+                withContext(Dispatchers.Main) {
+                    result.success(exitCode == 0)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    result.success(false)
+                }
+            }
         }
     }
 }
