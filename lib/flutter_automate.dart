@@ -5,6 +5,9 @@ import 'package:flutter/services.dart';
 export 'package:flutter_floatwing/flutter_floatwing.dart';
 export 'package:flutter_notification_listener/flutter_notification_listener.dart';
 
+// 导出 Agent HID API
+export 'agent_hid.dart';
+
 /// Recursively convert Map<Object?, Object?> to Map<String, dynamic>
 Map<String, dynamic> _convertMap(Map map) {
   return map.map((key, value) {
@@ -906,6 +909,28 @@ class UiElement {
     );
   }
 
+  /// 转换为 Map
+  Map<String, dynamic> toMap() {
+    return {
+      'index': index,
+      'type': type,
+      'text': text,
+      'contentDesc': contentDesc,
+      'resourceId': resourceId,
+      'bounds': {
+        'left': bounds.left,
+        'top': bounds.top,
+        'right': bounds.right,
+        'bottom': bounds.bottom,
+        'width': bounds.width,
+        'height': bounds.height,
+      },
+      'isClickable': isClickable,
+      'isScrollable': isScrollable,
+      'isEnabled': isEnabled,
+    };
+  }
+
   /// 转换为 AI 提示词字符串
   String toPromptString() {
     final parts = <String>[type];
@@ -1065,6 +1090,12 @@ class DeviceManager {
       );
     }
     return DeviceInfo.fromMap(_convertMap(result));
+  }
+
+  /// 获取屏幕尺寸 (简便方法)
+  Future<({int width, int height})> getScreenSize() async {
+    final deviceInfo = await info();
+    return (width: deviceInfo.screenWidth, height: deviceInfo.screenHeight);
   }
 
   /// 获取剪贴板

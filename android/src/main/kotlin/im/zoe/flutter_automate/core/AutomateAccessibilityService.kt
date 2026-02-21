@@ -327,6 +327,51 @@ class AutomateAccessibilityService : AccessibilityService() {
             performGlobalAction(GLOBAL_ACTION_TOGGLE_SPLIT_SCREEN)
         } else false
     }
+    
+    /**
+     * 输入文本到当前焦点控件
+     */
+    fun inputText(text: String): Boolean {
+        val rootNode = getRootNode() ?: return false
+        
+        // 查找当前获得焦点的可编辑节点
+        val focusedNode = rootNode.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+        if (focusedNode != null && focusedNode.isEditable) {
+            val arguments = android.os.Bundle()
+            arguments.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
+            val success = focusedNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
+            focusedNode.recycle()
+            return success
+        }
+        
+        // 如果没有焦点，尝试查找所有可编辑节件
+        val editableNodes = mutableListOf<AccessibilityNodeInfo>()
+        findEditableNodes(rootNode, editableNodes)
+        
+        if (editableNodes.isNotEmpty()) {
+            val targetNode = editableNodes.first()
+            // 先聚焦
+            targetNode.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+            // 再输入
+            val arguments = android.os.Bundle()
+            arguments.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
+            val success = targetNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
+            editableNodes.forEach { it.recycle() }
+            return success
+        }
+        
+        return false
+    }
+    
+    private fun findEditableNodes(node: AccessibilityNodeInfo, result: MutableList<AccessibilityNodeInfo>) {
+        if (node.isEditable) {
+            result.add(node)
+        }
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            findEditableNodes(child, result)
+        }
+    }
 }
 
 /**
