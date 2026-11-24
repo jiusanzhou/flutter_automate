@@ -5,3 +5,6 @@
 .pub/
 
 build/
+
+# Native build intermediates (CMake/ninja). Regenerated on every build.
+android/.cxx/

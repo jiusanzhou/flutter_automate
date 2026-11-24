@@ -59,27 +59,112 @@ object AppUtils {
      * 通过应用名启动
      */
     fun launchByName(context: Context, appName: String): Boolean {
-        val packageName = getPackageName(context, appName) ?: return false
+        val packageName = getPackageName(context, appName) ?: return launchSystemFallback(context, appName)
         return launch(context, packageName)
+    }
+
+    /**
+     * The system Settings app often has no launcher icon, so it's missing from
+     * the queryIntentActivities set above. Handle the few such names directly.
+     */
+    private fun launchSystemFallback(context: Context, appName: String): Boolean {
+        val key = appName.trim().lowercase()
+        val action = when (key) {
+            "设置", "settings", "系统设置" -> Settings.ACTION_SETTINGS
+            "wifi", "无线网络" -> Settings.ACTION_WIFI_SETTINGS
+            "蓝牙", "bluetooth" -> Settings.ACTION_BLUETOOTH_SETTINGS
+            else -> return false
+        }
+        return try {
+            context.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
     
     // ==================== 应用信息 ====================
     
     /**
      * 通过应用名获取包名
+     *
+     * Users say "设置" / "微信" / "Settings"; the label on the device may be in
+     * another language, differ in case, or carry a suffix ("设置 (系统)"). An
+     * exact string compare fails on all of those, so try progressively looser
+     * matches before giving up.
      */
     fun getPackageName(context: Context, appName: String): String? {
         val pm = context.packageManager
+        val query = appName.trim()
+        if (query.isEmpty()) return null
+
+        // Only apps with a launcher entry: fuzzy matching against every
+        // installed package would happily pick com.android.providers.settings
+        // for "settings", which can't be opened.
+        val launchable = pm.queryIntentActivities(
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0
+        ).map { it.activityInfo.packageName }.toSet()
         val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
-        
-        for (app in apps) {
-            val label = pm.getApplicationLabel(app).toString()
-            if (label == appName) {
-                return app.packageName
+            .filter { it.packageName in launchable }
+        val labelled = apps.map { it to pm.getApplicationLabel(it).toString() }
+
+        // 1. exact label
+        labelled.firstOrNull { it.second == query }?.let { return it.first.packageName }
+
+        // 2. exact package name
+        apps.firstOrNull { it.packageName == query }?.let { return it.packageName }
+
+        val lower = query.lowercase()
+
+        // 3. label in any case
+        labelled.firstOrNull { it.second.lowercase() == lower }?.let { return it.first.packageName }
+
+        // 4. known zh <-> en aliases for apps people ask for by name but the
+        //    ROM labels in the other language
+        aliases[lower]?.let { alias ->
+            labelled.firstOrNull { it.second.lowercase() == alias }?.let {
+                return it.first.packageName
             }
         }
-        return null
+
+        // 5. label contains the query ("设置" matches "设置 (系统)")
+        labelled.firstOrNull { it.second.lowercase().contains(lower) }?.let {
+            return it.first.packageName
+        }
+
+        // 6. query contains the label (rare, but cheap)
+        return labelled.firstOrNull {
+            it.second.length >= 2 && lower.contains(it.second.lowercase())
+        }?.first?.packageName
     }
+
+    /**
+     * Common apps whose label users ask for in one language while the ROM
+     * shows another. Keys are lowercase; values are lowercase labels.
+     */
+    private val aliases: Map<String, String> = mapOf(
+        "设置" to "settings",
+        "相机" to "camera",
+        "相册" to "photos",
+        "图库" to "gallery",
+        "电话" to "phone",
+        "拨号" to "phone",
+        "短信" to "messages",
+        "信息" to "messages",
+        "时钟" to "clock",
+        "闹钟" to "clock",
+        "日历" to "calendar",
+        "计算器" to "calculator",
+        "浏览器" to "chrome",
+        "商店" to "play store",
+        "应用商店" to "play store",
+        "地图" to "maps",
+        "邮件" to "gmail",
+        "音乐" to "youtube music",
+        "视频" to "youtube",
+        "文件" to "files",
+        "应用市场" to "play store",
+    )
     
     /**
      * 通过包名获取应用名
