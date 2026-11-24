@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.2] - 2026-11-24
+
+### Fixed
+- 🐛 **Launch by app name only worked on an exact label match.** That breaks
+  the common cases: a zh app name on an en ROM (`设置` vs `Settings`), a label
+  with a suffix, or a case difference. Users hit this on the very first step
+  of nearly every task.
+  - match in order: exact label, exact package, case-insensitive label,
+    zh<->en alias table, label-contains, label-contained-in
+  - restrict candidates to apps with a launcher entry, so a fuzzy match can't
+    pick an unlaunchable system package such as `com.android.providers.settings`
+  - add a direct-intent fallback for Settings / WiFi / Bluetooth, which often
+    have no launcher icon at all
+- 📦 Declare `<queries>` for MAIN/LAUNCHER: without it Android 11+ package
+  visibility hides almost every app from `queryIntentActivities`, so launching
+  by name silently failed.
+
+### Changed
+- Stop tracking `android/.cxx/` (CMake/ninja build intermediates).
+
 ## [1.1.1] - 2026-02-20
 
 ### Fixed
